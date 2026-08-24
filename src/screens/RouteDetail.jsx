@@ -61,6 +61,7 @@ export default function RouteDetail({ routeId, onBack, onEdit, onDelete, onStart
                   <div className="pn-roadbook-title-row">
                     <div className="pn-roadbook-title">{s.title}</div>
                     <div className="pn-roadbook-times">
+                      {route.targets && route.targets[i] != null && <span className="pn-bracket">target {fmt(route.targets[i], false)}</span>}
                       {route.gold && route.gold[i] != null && <span className="pn-bracket pn-brass-text">gold {fmt(route.gold[i], false)}</span>}
                       {pbDurations && <span className="pn-bracket">pb {fmt(pbDurations[i], false)}</span>}
                     </div>

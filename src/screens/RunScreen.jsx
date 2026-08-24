@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { getKey, setKey } from "../lib/storage";
-import { fmt, fmtDelta, toDurations, computeBPT } from "../lib/time";
+import { fmt, fmtDelta, toDurations, toCumulative, computeBPT } from "../lib/time";
 import BackHead from "../components/BackHead";
 import FlapClock from "../components/FlapClock";
 import PaceRoller from "../components/PaceRoller";
@@ -83,6 +83,15 @@ export default function RunScreen({ routeId, onExit, onFinished }) {
   const deltaSeries = splits.map((s, i) => (pbAtSplit(i) != null ? s - pbAtSplit(i) : null)).filter((d) => d != null);
   const lastDelta = deltaSeries.length ? deltaSeries[deltaSeries.length - 1] : null;
 
+  // Cumulative target checkpoint at each split, derived from the
+  // per-segment targets set in the route editor — not the flat total,
+  // so the live comparison is accurate mid-run rather than always
+  // measuring against the full route's target.
+  const targetCum = route.targets ? toCumulative(route.targets) : null;
+  const targetAtSplit = (i) => (targetCum && targetCum[i] != null ? targetCum[i] : null);
+  const targetDeltaSeries = splits.map((s, i) => (targetAtSplit(i) != null ? s - targetAtSplit(i) : null)).filter((d) => d != null);
+  const lastTargetDelta = targetDeltaSeries.length ? targetDeltaSeries[targetDeltaSeries.length - 1] : null;
+
   return (
     <div className="pn-view">
       <BackHead
@@ -96,7 +105,7 @@ export default function RunScreen({ routeId, onExit, onFinished }) {
         {route.target != null && (
           <div className="pn-clock-vs">
             target {fmt(route.target, false)}
-            {elapsed > 0 && <span className={elapsed - route.target > 0 ? "pn-bad" : "pn-good"}> ({fmtDelta(elapsed - route.target)})</span>}
+            {lastTargetDelta != null && <span className={lastTargetDelta > 0 ? "pn-bad" : "pn-good"}> ({fmtDelta(lastTargetDelta)})</span>}
           </div>
         )}
       </div>
@@ -166,6 +175,7 @@ function RunSummary({ route, splits, onReset, onExit }) {
   const durations = toDurations(splits);
   const bpt = computeBPT(route.gold);
   const deltaSeries = route.pb ? splits.map((s, i) => s - (isPB ? (route.pb.segments[i] ?? s) : route.pb.segments[i])) : [];
+  const targetCum = route.targets ? toCumulative(route.targets) : null;
 
   return (
     <div>
@@ -180,7 +190,7 @@ function RunSummary({ route, splits, onReset, onExit }) {
 
       <table className="pn-split-table">
         <thead>
-          <tr><th>#</th><th>Segment</th><th>Split</th><th>Gold</th><th>Pbδ</th></tr>
+          <tr><th>#</th><th>Segment</th><th>Split</th><th>Gold</th><th>Pbδ</th><th>Targetδ</th></tr>
         </thead>
         <tbody>
           {route.segments.map((s, i) => {
@@ -188,6 +198,8 @@ function RunSummary({ route, splits, onReset, onExit }) {
             const isGold = route.gold && route.gold[i] === segTime;
             const pbCum = route.pb && !isPB ? route.pb.segments[i] : null;
             const delta = pbCum != null ? splits[i] - pbCum : null;
+            const targetCumAt = targetCum && targetCum[i] != null ? targetCum[i] : null;
+            const targetDelta = targetCumAt != null ? splits[i] - targetCumAt : null;
             return (
               <tr key={s.id}>
                 <td className="pn-ink-dim">{i + 1}</td>
@@ -195,6 +207,7 @@ function RunSummary({ route, splits, onReset, onExit }) {
                 <td className={"pn-mono" + (isGold ? " pn-brass-text" : "")}>{fmt(segTime, false)}{isGold && " ★"}</td>
                 <td className="pn-mono pn-ink-dim">{route.gold?.[i] != null ? fmt(route.gold[i], false) : "—"}</td>
                 <td className={"pn-mono " + (delta == null ? "" : delta > 0 ? "pn-bad" : "pn-good")}>{delta == null ? "—" : fmtDelta(delta)}</td>
+                <td className={"pn-mono " + (targetDelta == null ? "" : targetDelta > 0 ? "pn-bad" : "pn-good")}>{targetDelta == null ? "—" : fmtDelta(targetDelta)}</td>
               </tr>
             );
           })}
