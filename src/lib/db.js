@@ -1,4 +1,5 @@
 import { supabase } from "./supabaseClient";
+import { fetchSteamGameImage } from "./steam";
 
 // ---------- games (shared catalog) ----------
 
@@ -24,9 +25,15 @@ export async function findOrCreateGame({ name, steamAppid, headerImage, custom }
     const { data: existing } = await supabase.from("games").select("*").is("steam_appid", null).eq("name", name).maybeSingle();
     if (existing) return existing;
   }
+  // The search dropdown's headerImage is a tiny 231x87 thumbnail — only
+  // good enough for that dropdown. Since we're actually creating this
+  // game's shared catalog row (a one-time cost, not per-keystroke), swap
+  // in a real screenshot so every library tile/banner it appears on isn't
+  // stretched-blurry from day one.
+  const betterImage = steamAppid != null ? await fetchSteamGameImage(steamAppid) : null;
   const { data, error } = await supabase
     .from("games")
-    .insert({ name, steam_appid: steamAppid ?? null, header_image: headerImage ?? null })
+    .insert({ name, steam_appid: steamAppid ?? null, header_image: betterImage || headerImage || null })
     .select()
     .single();
   if (error) throw error;
