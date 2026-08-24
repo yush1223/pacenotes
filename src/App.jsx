@@ -2,7 +2,9 @@ import { useState, useEffect } from "react";
 import { getKey, setKey, deleteKey, uid } from "./lib/storage";
 import { toDurations } from "./lib/time";
 import { SEED_ROUTE_ID, SEED_GAME_ID, seedSegments, seedFakeRuns } from "./lib/seed";
+import { getSession, onAuthStateChange, signOut } from "./lib/auth";
 import Shell from "./components/Shell";
+import AuthScreen from "./screens/AuthScreen";
 import Library from "./screens/Library";
 import GameDetail from "./screens/GameDetail";
 import RouteEditor from "./screens/RouteEditor";
@@ -12,6 +14,12 @@ import HistoryScreen from "./screens/HistoryScreen";
 
 // ---------- root ----------
 export default function App() {
+  // undefined = still checking for a session, null = signed out.
+  // NOTE: the data below this point is still the old localStorage layer,
+  // shared by whichever browser profile has it — not yet scoped per
+  // account. That's the next phase (games/routes/runs moving to
+  // Supabase); this phase is just the account gate in front of the app.
+  const [session, setSession] = useState(undefined);
   const [loading, setLoading] = useState(true);
   const [games, setGames] = useState([]);
   const [routesByGame, setRoutesByGame] = useState({});
@@ -29,6 +37,13 @@ export default function App() {
   };
 
   useEffect(() => {
+    getSession().then(setSession);
+    const sub = onAuthStateChange(setSession);
+    return () => sub.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (!session) return;
     (async () => {
       let g = await getKey("pn_games", null);
       if (!g) {
@@ -68,7 +83,7 @@ export default function App() {
       }
       setLoading(false);
     })();
-  }, []);
+  }, [session]);
 
   const addGame = async (name) => {
     const newGame = { id: uid(), name };
@@ -126,7 +141,21 @@ export default function App() {
     onSelectGame: (id) => { setGameId(id); setScreen("game"); },
     onAddGame: async (name) => { const id = await addGame(name); setGameId(id); setScreen("game"); },
     onDeleteGame: deleteGame,
+    userEmail: session?.user?.email,
+    onSignOut: signOut,
   };
+
+  if (session === undefined) {
+    return (
+      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--bg)", color: "var(--ink-dim)", fontFamily: "'JetBrains Mono', monospace" }}>
+        Loading…
+      </div>
+    );
+  }
+
+  if (!session) {
+    return <AuthScreen />;
+  }
 
   if (loading) {
     return (

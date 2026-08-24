@@ -53,6 +53,20 @@ button, input, textarea, select { font-family: inherit; }
     var(--bg);
 }
 
+/* ---------- auth ---------- */
+.pn-auth-shell {
+  display: flex; align-items: center; justify-content: center; min-height: 100vh;
+  font-family: 'JetBrains Mono', monospace; color: var(--ink); padding: 20px;
+  background:
+    radial-gradient(1100px 700px at 14% -8%, rgba(255,255,255,0.035), transparent 55%),
+    repeating-linear-gradient(115deg, rgba(255,255,255,0.010) 0px, rgba(255,255,255,0.010) 1px, transparent 1px, transparent 3px),
+    var(--bg);
+}
+.pn-auth-box { width: 100%; max-width: 340px; background: var(--panel); border: 1px solid var(--hairline); border-radius: 2px; padding: 28px 26px; animation: pn-page-in var(--dur-slow) var(--ease-out) both; }
+.pn-auth-error { font-size: 12px; color: var(--bad); margin-top: 12px; line-height: 1.5; }
+.pn-auth-switch { display: block; width: 100%; text-align: center; background: none; border: none; color: var(--ink-dim); font-family: 'JetBrains Mono', monospace; font-size: 12px; margin-top: 18px; padding: 4px; cursor: pointer; }
+.pn-auth-switch:hover { color: var(--ink); }
+
 .pn-sidebar {
   width: var(--sidebar-w);
   flex-shrink: 0;
@@ -118,6 +132,10 @@ button, input, textarea, select { font-family: inherit; }
 
 .pn-sidebar-footer { padding: 12px 8px 4px; border-top: 1px solid var(--hairline-soft); margin-top: 8px; }
 .pn-sidebar-footer-readout { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.04em; color: var(--ink-dimmer); line-height: 1.7; }
+.pn-sidebar-account { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--hairline-soft); }
+.pn-sidebar-account-email { font-size: 10px; color: var(--ink-dimmer); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.pn-sidebar-signout { flex-shrink: 0; background: none; border: none; color: var(--ink-dimmer); font-family: 'JetBrains Mono', monospace; font-size: 10px; cursor: pointer; padding: 2px; }
+.pn-sidebar-signout:hover { color: var(--bad); }
 
 .pn-main {
   flex: 1;

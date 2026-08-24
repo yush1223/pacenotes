@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useConfirm } from "./ConfirmProvider";
 
 // ---------- persistent nav sidebar ----------
-export default function Sidebar({ games, activeGameId, totalRuns, onHome, onSelectGame, onAddGame, onDeleteGame }) {
+export default function Sidebar({ games, activeGameId, totalRuns, onHome, onSelectGame, onAddGame, onDeleteGame, userEmail, onSignOut }) {
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState("");
   const confirm = useConfirm();
@@ -69,6 +69,12 @@ export default function Sidebar({ games, activeGameId, totalRuns, onHome, onSele
           {String(games.length).padStart(2, "0")} games logged<br />
           {String(totalRuns).padStart(3, "0")} runs recorded
         </div>
+        {userEmail && (
+          <div className="pn-sidebar-account">
+            <span className="pn-sidebar-account-email" title={userEmail}>{userEmail}</span>
+            <button className="pn-sidebar-signout" onClick={onSignOut}>sign out</button>
+          </div>
+        )}
       </div>
     </div>
   );
