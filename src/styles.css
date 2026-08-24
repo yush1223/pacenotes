@@ -348,10 +348,6 @@ button, input, textarea, select { font-family: inherit; }
 .pn-explore-tile-name { font-weight: 600; font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pn-explore-tile-count { font-family: 'JetBrains Mono', monospace; font-size: 10.5px; margin-top: 4px; }
 .pn-explore-banner { width: 100%; aspect-ratio: 460 / 130; background-size: cover; background-position: center; border-radius: 2px; margin-bottom: 20px; border: 1px solid var(--hairline); }
-.pn-banner-stack { position: relative; overflow: hidden; background-color: var(--panel-raised); }
-.pn-banner-layer { position: absolute; inset: 0; background-size: cover; background-position: center; }
-.pn-banner-hires { opacity: 0; transition: opacity 500ms var(--ease-out); }
-.pn-banner-hires-visible { opacity: 1; }
 
 /* ---------- labels & inputs ---------- */
 .pn-label { display: block; font-family: 'JetBrains Mono', monospace; font-size: 10.5px; font-weight: 600; letter-spacing: 0.08em; color: var(--ink-dim); text-transform: uppercase; margin: 14px 0 6px; }
