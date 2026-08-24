@@ -28,11 +28,20 @@
 
 * { box-sizing: border-box; }
 html, body, #root { height: 100%; }
-body { margin: 0; }
+/* The actual base font declaration — every individual class throughout
+   this file sets 'JetBrains Mono' explicitly (this is a one-font app by
+   design, terminal/instrument-panel aesthetic throughout), but body
+   itself never got one. Anything NOT wrapped in one of those tagged
+   classes — plain hint text, tile titles, table cells, list items — was
+   silently falling back to the browser's default UI font this whole
+   time. Setting it here once means every element inherits it correctly
+   by default, and the per-class declarations become redundant-but-
+   harmless rather than load-bearing. */
+body { margin: 0; font-family: 'JetBrains Mono', monospace; }
 /* Form controls and buttons don't inherit font-family from the page by
    default in most browsers (UA stylesheets set their own) — without this,
-   nav items, tile buttons, etc. silently fall back to the system font
-   even though every custom class here says JetBrains Mono. */
+   nav items, tile buttons, etc. would still fall back to the system font
+   even with the body rule above. */
 button, input, textarea, select { font-family: inherit; }
 ::selection { background: rgba(216, 169, 78, 0.25); color: var(--ink); }
 
