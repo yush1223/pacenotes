@@ -418,6 +418,10 @@ button, input, textarea, select { font-family: inherit; }
 .pn-mini-btn-danger { color: var(--bad); margin-left: auto; }
 .pn-seg-editor-actions { display: flex; gap: 6px; margin-top: 8px; }
 .pn-seg-editor-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 10px; }
+.pn-seg-mode-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.pn-seg-mode-tabs { margin-bottom: 0; }
+.pn-seg-detail-card { background: var(--panel); border: 1px solid var(--hairline); border-radius: 2px; padding: 14px; margin-bottom: 12px; transition: border-color var(--dur-base) var(--ease-out); }
+.pn-seg-detail-card:focus-within { border-color: var(--ink-dim); }
 .pn-seg-editor-card { display: flex; background: var(--panel); border: 1px solid var(--hairline); border-radius: 2px; overflow: hidden; transition: border-color var(--dur-base) var(--ease-out); }
 .pn-seg-editor-card:focus-within { border-color: var(--ink-dim); }
 .pn-seg-editor-tab { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 13px; color: var(--ink-dim); width: 32px; flex-shrink: 0; display: flex; align-items: flex-start; justify-content: center; padding-top: 12px; border-right: 1px solid var(--hairline); }
