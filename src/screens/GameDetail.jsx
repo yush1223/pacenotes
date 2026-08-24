@@ -1,27 +1,15 @@
 import { useState, useEffect } from "react";
 import * as db from "../lib/db";
 import { supabase } from "../lib/supabaseClient";
-import { fetchSteamGameImage } from "../lib/steam";
 import { fmt } from "../lib/time";
 import Sparkline from "../components/Sparkline";
 import BackHead from "../components/BackHead";
+import GameBanner from "../components/GameBanner";
 
 // ---------- game detail ----------
 export default function GameDetail({ game, routes, userId, onBack, onOpenRoute, onNewRoute }) {
   const [details, setDetails] = useState({});
   const [owners, setOwners] = useState({});
-  // Tile-tier art (game.header_image) shows immediately; a real
-  // screenshot is fetched on the way in and swapped once it lands, so the
-  // one page big enough to show it off actually does.
-  const [banner, setBanner] = useState(game.header_image || null);
-
-  useEffect(() => {
-    setBanner(game.header_image || null);
-    if (!game.steam_appid) return;
-    let live = true;
-    fetchSteamGameImage(game.steam_appid).then((d) => { if (live && d?.image) setBanner(d.image); });
-    return () => { live = false; };
-  }, [game.id, game.steam_appid, game.header_image]);
 
   useEffect(() => {
     (async () => {
@@ -47,7 +35,7 @@ export default function GameDetail({ game, routes, userId, onBack, onOpenRoute, 
   return (
     <div className="pn-view">
       <BackHead onBack={onBack} eyebrow="Game" title={game.name} />
-      {banner && <div className="pn-explore-banner" style={{ backgroundImage: `url(${banner})` }} />}
+      <GameBanner steamAppid={game.steam_appid} thumb={game.header_image} className="pn-explore-banner" />
       {routes.length === 0 && <div className="pn-empty">No routes yet for {game.name}.</div>}
 
       <div className="pn-tile-grid pn-stagger">
