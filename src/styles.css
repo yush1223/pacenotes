@@ -476,3 +476,19 @@ button, input, textarea, select { font-family: inherit; }
   padding: 10px 18px; border-radius: 2px; font-family: 'JetBrains Mono', monospace; font-size: 12px;
   box-shadow: 0 8px 24px rgba(0,0,0,0.5); z-index: 50; animation: pn-toast-in var(--dur-base) var(--ease-out) both;
 }
+
+/* ---------- in-app confirm dialog (not window.confirm) ---------- */
+@keyframes pn-confirm-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes pn-confirm-in { from { opacity: 0; transform: translateY(6px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+.pn-confirm-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100;
+  display: flex; align-items: center; justify-content: center; padding: 20px;
+  animation: pn-confirm-fade var(--dur-fast) var(--ease-out) both;
+}
+.pn-confirm-box {
+  background: var(--panel-raised); border: 1px solid var(--hairline); border-radius: 2px;
+  padding: 20px 22px; max-width: 380px; width: 100%; box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  animation: pn-confirm-in var(--dur-base) var(--ease-bounce) both;
+}
+.pn-confirm-message { font-size: 14px; line-height: 1.5; color: var(--ink); }
+.pn-confirm-box .pn-btn-row .pn-btn { flex: 1; }

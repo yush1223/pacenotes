@@ -2,12 +2,14 @@ import { useState, useEffect } from "react";
 import { getKey } from "../lib/storage";
 import { fmt } from "../lib/time";
 import Sparkline from "../components/Sparkline";
+import { useConfirm } from "../components/ConfirmProvider";
 
 // ---------- home dashboard ----------
 export default function Library({ games, routesByGame, totalRuns, onOpenGame, onAddGame, onDeleteGame }) {
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState("");
   const [gameStats, setGameStats] = useState({});
+  const confirm = useConfirm();
 
   useEffect(() => {
     (async () => {
@@ -62,7 +64,7 @@ export default function Library({ games, routesByGame, totalRuns, onOpenGame, on
             <div className="pn-tile" key={g.id} onClick={() => onOpenGame(g.id)}>
               <button
                 className="pn-tile-x"
-                onClick={(e) => { e.stopPropagation(); if (confirm(`Delete "${g.name}" and all its routes?`)) onDeleteGame(g.id); }}
+                onClick={async (e) => { e.stopPropagation(); if (await confirm(`Delete "${g.name}" and all its routes?`)) onDeleteGame(g.id); }}
                 aria-label="Delete game"
               >
                 ✕

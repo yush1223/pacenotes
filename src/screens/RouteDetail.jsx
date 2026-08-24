@@ -2,17 +2,19 @@ import { useState, useEffect } from "react";
 import { getKey, setKey } from "../lib/storage";
 import { fmt, toDurations } from "../lib/time";
 import BackHead from "../components/BackHead";
+import { useConfirm } from "../components/ConfirmProvider";
 
 // ---------- route detail (roadbook) ----------
 export default function RouteDetail({ routeId, onBack, onEdit, onDelete, onStartRun, onHistory }) {
   const [route, setRoute] = useState(null);
+  const confirm = useConfirm();
   useEffect(() => { (async () => setRoute(await getKey(`pn_route_${routeId}`, null)))(); }, [routeId]);
   if (!route) return <div className="pn-view">Loading…</div>;
 
   const pbDurations = route.pb ? toDurations(route.pb.segments) : null;
 
   const resetPB = async () => {
-    if (!confirm(`Clear the personal best for "${route.name}"? This can't be undone — your next run starts fresh.`)) return;
+    if (!(await confirm(`Clear the personal best for "${route.name}"? This can't be undone — your next run starts fresh.`))) return;
     const updated = { ...route, pb: null };
     await setKey(`pn_route_${route.id}`, updated);
     setRoute(updated);
@@ -55,7 +57,7 @@ export default function RouteDetail({ routeId, onBack, onEdit, onDelete, onStart
           <button
             className="pn-btn pn-btn-danger-ghost pn-btn-full"
             style={{ marginTop: 10 }}
-            onClick={() => { if (confirm(`Delete route "${route.name}"? This can't be undone.`)) onDelete(route); }}
+            onClick={async () => { if (await confirm(`Delete route "${route.name}"? This can't be undone.`)) onDelete(route); }}
           >
             Delete route
           </button>

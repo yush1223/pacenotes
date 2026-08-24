@@ -1,9 +1,11 @@
 import { useState } from "react";
+import { useConfirm } from "./ConfirmProvider";
 
 // ---------- persistent nav sidebar ----------
 export default function Sidebar({ games, activeGameId, totalRuns, onHome, onSelectGame, onAddGame, onDeleteGame }) {
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState("");
+  const confirm = useConfirm();
 
   const submit = () => {
     if (name.trim()) { onAddGame(name.trim()); setName(""); setAdding(false); }
@@ -28,7 +30,7 @@ export default function Sidebar({ games, activeGameId, totalRuns, onHome, onSele
             <span className="pn-nav-item-name">{g.name}</span>
             <span
               className="pn-nav-item-x"
-              onClick={(e) => { e.stopPropagation(); if (confirm(`Delete "${g.name}" and all its routes?`)) onDeleteGame(g.id); }}
+              onClick={async (e) => { e.stopPropagation(); if (await confirm(`Delete "${g.name}" and all its routes?`)) onDeleteGame(g.id); }}
               role="button"
               aria-label={`Delete ${g.name}`}
             >

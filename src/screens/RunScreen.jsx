@@ -5,9 +5,11 @@ import BackHead from "../components/BackHead";
 import FlapClock from "../components/FlapClock";
 import PaceRoller from "../components/PaceRoller";
 import DeltaGraph from "../components/DeltaGraph";
+import { useConfirm } from "../components/ConfirmProvider";
 
 // ---------- run screen ----------
 export default function RunScreen({ routeId, onExit, onFinished }) {
+  const confirm = useConfirm();
   const [route, setRoute] = useState(null);
   const [running, setRunning] = useState(false);
   const [elapsed, setElapsed] = useState(0);
@@ -119,7 +121,7 @@ export default function RunScreen({ routeId, onExit, onFinished }) {
   return (
     <div className="pn-view">
       <BackHead
-        onBack={() => { if (running && !confirm("Run in progress — leave and lose it?")) return; onExit(); }}
+        onBack={async () => { if (running && !(await confirm("Run in progress — leave and lose it?"))) return; onExit(); }}
         eyebrow="Run"
         title={route.name}
       />
