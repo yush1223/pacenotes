@@ -17,7 +17,12 @@ export default function DeltaGraph({ pointsDelta, livePoint, height = 108 }) {
   const width = 400;
   const zeroY = height / 2;
   const halfSpan = height / 2 - 18;
-  const maxAbs = Math.max(1000, ...points.map((d) => Math.abs(d)));
+  // Scale comes from finalized splits only. The live point grows every
+  // frame while a segment is in progress — if it fed into the scale too,
+  // every other bar would visibly shrink and resize each tick as it grew,
+  // which reads as jittery rather than smooth. It clamps to the same
+  // scale instead (capping out at the edge is normal chart behavior).
+  const maxAbs = Math.max(1000, ...completed.map((d) => Math.abs(d)));
   const n = points.length;
   const gap = width / n;
   const barW = Math.min(30, gap * 0.5);
@@ -30,7 +35,7 @@ export default function DeltaGraph({ pointsDelta, livePoint, height = 108 }) {
         <line x1="0" y1={zeroY} x2={width} y2={zeroY} stroke="var(--hairline-soft)" strokeWidth="1" />
         {points.map((d, i) => {
           const isLive = i === liveIdx;
-          const barH = Math.max((Math.abs(d) / maxAbs) * halfSpan, 2);
+          const barH = Math.min(Math.max((Math.abs(d) / maxAbs) * halfSpan, 2), halfSpan);
           const behind = d > 0;
           const x = i * gap + gap / 2 - barW / 2;
           const y = behind ? zeroY : zeroY - barH;

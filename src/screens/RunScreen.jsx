@@ -82,10 +82,12 @@ export default function RunScreen({ routeId, onExit, onFinished }) {
 
   // What to aim for on each segment: PB's own time for that segment once
   // one exists (it's the thing the graph is already racing against), else
-  // the optional manual target — unless the route's target toggle (set in
-  // the route editor) is off, in which case target never counts, even as
-  // a fallback. Each aim tracks its own source so the UI can label it
-  // (and give PB the brass treatment every other "record" gets here).
+  // the optional manual target as a stand-in — unless the route's target
+  // toggle (set in the route editor) is off, in which case target never
+  // counts, even as a fallback. Each aim tracks its own source so the UI
+  // can label it (and give PB the brass treatment every other "record"
+  // gets here). Once a PB exists, target stops driving anything — it just
+  // rides along as a plain reference number, per route.useTarget.
   const useTarget = route.useTarget !== false;
   const pbDurations = route.pb ? toDurations(route.pb.segments) : null;
   const aims = route.segments.map((_, i) => {
@@ -103,6 +105,9 @@ export default function RunScreen({ routeId, onExit, onFinished }) {
   const elapsedInSeg = Math.max(0, elapsed - segStartElapsed);
   const currentAim = aims[segIdx];
   const liveSegDelta = currentAim != null && elapsed > 0 ? elapsedInSeg - currentAim.value : null;
+  // Shown only as an extra reference alongside the PB comparison, never
+  // driving the color/delta itself, when the primary aim above is a PB.
+  const currentTargetRef = useTarget && route.targets && route.targets[segIdx] != null ? route.targets[segIdx] : null;
 
   // Live bar for the graph specifically compares against PB only (the
   // graph is captioned "vs personal best" — target isn't part of that
@@ -125,9 +130,12 @@ export default function RunScreen({ routeId, onExit, onFinished }) {
           <div className="pn-clock-vs">
             this split {fmt(elapsedInSeg, false)} / <span className={currentAim.isPb ? "pn-brass-text" : ""}>{currentAim.isPb ? "pb" : "target"} {fmt(currentAim.value, false)}</span>
             {liveSegDelta != null && <span className={liveSegDelta > 0 ? "pn-bad" : "pn-good"}> ({fmtDelta(liveSegDelta)})</span>}
+            {currentAim.isPb && currentTargetRef != null && (
+              <span className="pn-clock-vs-ref"> · target {fmt(currentTargetRef, false)}</span>
+            )}
           </div>
         ) : (
-          <div className="pn-clock-vs pn-ink-dim">no pb or target set for this segment yet</div>
+          <div className="pn-clock-vs pn-ink-dim">no pb{useTarget ? " or target" : ""} set for this segment yet</div>
         )}
       </div>
 
@@ -199,6 +207,7 @@ function RunSummary({ route, splits, onReset, onExit }) {
   const isPB = route.pb && route.pb.total === total;
   const durations = toDurations(splits);
   const deltaSeries = route.pb ? splits.map((s, i) => s - (isPB ? (route.pb.segments[i] ?? s) : route.pb.segments[i])) : [];
+  const useTarget = route.useTarget !== false;
 
   return (
     <div>
@@ -212,14 +221,14 @@ function RunSummary({ route, splits, onReset, onExit }) {
 
       <table className="pn-split-table">
         <thead>
-          <tr><th>#</th><th>Segment</th><th>Split</th><th>Pbδ</th><th>Targetδ</th></tr>
+          <tr><th>#</th><th>Segment</th><th>Split</th><th>Pbδ</th>{useTarget && <th>Targetδ</th>}</tr>
         </thead>
         <tbody>
           {route.segments.map((s, i) => {
             const segTime = durations[i];
             const pbCum = route.pb && !isPB ? route.pb.segments[i] : null;
             const delta = pbCum != null ? splits[i] - pbCum : null;
-            const target = route.targets && route.targets[i] != null ? route.targets[i] : null;
+            const target = useTarget && route.targets && route.targets[i] != null ? route.targets[i] : null;
             const targetDelta = target != null ? segTime - target : null;
             return (
               <tr key={s.id}>
@@ -227,7 +236,9 @@ function RunSummary({ route, splits, onReset, onExit }) {
                 <td>{s.title}</td>
                 <td className="pn-mono">{fmt(segTime, false)}</td>
                 <td className={"pn-mono " + (delta == null ? "" : delta > 0 ? "pn-bad" : "pn-good")}>{delta == null ? "—" : fmtDelta(delta)}</td>
-                <td className={"pn-mono " + (targetDelta == null ? "" : targetDelta > 0 ? "pn-bad" : "pn-good")}>{targetDelta == null ? "—" : fmtDelta(targetDelta)}</td>
+                {useTarget && (
+                  <td className={"pn-mono " + (targetDelta == null ? "" : targetDelta > 0 ? "pn-bad" : "pn-good")}>{targetDelta == null ? "—" : fmtDelta(targetDelta)}</td>
+                )}
               </tr>
             );
           })}

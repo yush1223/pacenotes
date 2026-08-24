@@ -2,6 +2,7 @@ import { useState } from "react";
 import { uid } from "../lib/storage";
 import { fmt, parseTargetInput } from "../lib/time";
 import BackHead from "../components/BackHead";
+import Switch from "../components/Switch";
 
 // ---------- route editor ----------
 export default function RouteEditor({ gameId, initial, onCancel, onSave }) {
@@ -37,10 +38,13 @@ export default function RouteEditor({ gameId, initial, onCancel, onSave }) {
       id: initial?.id || uid(),
       gameId,
       name: name.trim(),
-      target: parseTargetInput(targetStr),
+      // Target is an all-or-nothing optional feature — switching it off
+      // clears the stored values too, not just the display, so "off"
+      // really means gone, not just hidden.
+      target: useTarget ? parseTargetInput(targetStr) : null,
       segments: cleanSegs,
       pb: initial?.pb || null,
-      targets: kept.map((s) => parseTargetInput(s.targetStr)),
+      targets: useTarget ? kept.map((s) => parseTargetInput(s.targetStr)) : kept.map(() => null),
       useTarget,
     });
   };
@@ -50,15 +54,20 @@ export default function RouteEditor({ gameId, initial, onCancel, onSave }) {
       <BackHead onBack={onCancel} eyebrow={initial ? "Edit route" : "New route"} title="Route editor" />
       <label className="pn-label">Route name</label>
       <input className="pn-input" placeholder="e.g. Any% — no major glitches" value={name} onChange={(e) => setName(e.target.value)} />
-      <label className="pn-label">Total target (optional)</label>
-      <input className="pn-input pn-input-mono" placeholder="mm:ss or h:mm:ss — e.g. current WR" value={targetStr} onChange={(e) => setTargetStr(e.target.value)} />
-      <label className="pn-label" style={{ marginTop: 18 }}>Segments</label>
-      <div className="pn-hint" style={{ marginBottom: 6 }}>
-        A per-segment target is optional — once you have a PB, that becomes the thing to chase automatically. Set a target for segments you don't have a PB pace for yet.
+
+      <Switch checked={useTarget} onChange={setUseTarget} label="Use target times" />
+      <div className="pn-hint" style={{ marginTop: -8, marginBottom: 14 }}>
+        Speedrunning here is built around PBs — target is an optional stand-in for segments (or a whole route) you don't have a PB for yet.
       </div>
-      <button className="pn-target-toggle" onClick={() => setUseTarget((v) => !v)} style={{ marginBottom: 10 }}>
-        segment targets during runs: {useTarget ? "on" : "off"}
-      </button>
+
+      {useTarget && (
+        <>
+          <label className="pn-label">Total target (optional)</label>
+          <input className="pn-input pn-input-mono" placeholder="mm:ss or h:mm:ss — e.g. current WR" value={targetStr} onChange={(e) => setTargetStr(e.target.value)} />
+        </>
+      )}
+
+      <label className="pn-label" style={{ marginTop: 18 }}>Segments</label>
 
       <div className="pn-seg-editor-list pn-stagger">
         {segments.map((s, i) => (
@@ -67,13 +76,15 @@ export default function RouteEditor({ gameId, initial, onCancel, onSave }) {
             <div className="pn-seg-editor-body">
               <div className="pn-seg-editor-toprow">
                 <input className="pn-input" placeholder="Segment title" value={s.title} onChange={(e) => updateSeg(i, "title", e.target.value)} />
-                <input
-                  className="pn-input pn-input-mono pn-seg-editor-target"
-                  placeholder="target"
-                  title="Optional target split time for this segment (mm:ss)"
-                  value={s.targetStr}
-                  onChange={(e) => updateSeg(i, "targetStr", e.target.value)}
-                />
+                {useTarget && (
+                  <input
+                    className="pn-input pn-input-mono pn-seg-editor-target"
+                    placeholder="target"
+                    title="Optional target split time for this segment (mm:ss)"
+                    value={s.targetStr}
+                    onChange={(e) => updateSeg(i, "targetStr", e.target.value)}
+                  />
+                )}
               </div>
               <textarea className="pn-textarea" placeholder={"One step per line…"} rows={3} value={s.notes} onChange={(e) => updateSeg(i, "notes", e.target.value)} />
               <div className="pn-seg-editor-actions">

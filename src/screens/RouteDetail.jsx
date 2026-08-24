@@ -26,13 +26,15 @@ export default function RouteDetail({ routeId, onBack, onEdit, onDelete, onStart
         <div className="pn-split-col-sticky">
           <div className="pn-gauge-panel" style={{ flexDirection: "column", alignItems: "stretch", gap: 14, padding: "18px 16px" }}>
             <div className="pn-gauge" style={{ alignItems: "flex-start" }}>
-              <span className="pn-gauge-label">target</span>
-              <span className="pn-mono pn-gauge-value">{route.target != null ? fmt(route.target, false) : "—"}</span>
-            </div>
-            <div className="pn-gauge" style={{ alignItems: "flex-start" }}>
               <span className="pn-gauge-label">personal best</span>
               <span className="pn-mono pn-gauge-value pn-brass-text">{route.pb ? fmt(route.pb.total, false) : "—"}</span>
             </div>
+            {route.useTarget !== false && route.target != null && (
+              <div className="pn-gauge" style={{ alignItems: "flex-start" }}>
+                <span className="pn-gauge-label">target</span>
+                <span className="pn-mono pn-gauge-value">{fmt(route.target, false)}</span>
+              </div>
+            )}
           </div>
 
           <button className="pn-btn pn-btn-primary pn-btn-full" style={{ marginTop: 14 }} onClick={onStartRun}>▶ Start run</button>
@@ -72,8 +74,8 @@ export default function RouteDetail({ routeId, onBack, onEdit, onDelete, onStart
                   <div className="pn-roadbook-title-row">
                     <div className="pn-roadbook-title">{s.title}</div>
                     <div className="pn-roadbook-times">
-                      {route.targets && route.targets[i] != null && <span className="pn-bracket">target {fmt(route.targets[i], false)}</span>}
                       {pbDurations && <span className="pn-bracket pn-brass-text">pb {fmt(pbDurations[i], false)}</span>}
+                      {route.useTarget !== false && route.targets && route.targets[i] != null && <span className="pn-bracket">target {fmt(route.targets[i], false)}</span>}
                     </div>
                   </div>
                   {s.notes && (
