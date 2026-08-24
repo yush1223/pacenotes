@@ -46,7 +46,7 @@ export default function RouteEditor({ gameId, initial, onCancel, onSave }) {
       <input className="pn-input pn-input-mono" placeholder="mm:ss or h:mm:ss — e.g. current WR" value={targetStr} onChange={(e) => setTargetStr(e.target.value)} />
       <label className="pn-label" style={{ marginTop: 18 }}>Segments</label>
 
-      <div className="pn-seg-editor-list">
+      <div className="pn-seg-editor-list pn-stagger">
         {segments.map((s, i) => (
           <div className="pn-seg-editor-card" key={s.id}>
             <div className="pn-seg-editor-tab">{String(i + 1).padStart(2, "0")}</div>

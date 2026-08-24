@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { getKey, setKey } from "../lib/storage";
 import { fmt, fmtDelta, toDurations, computeBPT } from "../lib/time";
 import BackHead from "../components/BackHead";
@@ -102,35 +102,61 @@ export default function RunScreen({ routeId, onExit, onFinished }) {
       </div>
 
       {!finished ? (
-        <>
-          <PaceRoller segments={route.segments} currentIdx={segIdx} />
-
-          {currentSeg.notes && (
-            <ul className="pn-note-steps pn-note-steps-run">
-              {currentSeg.notes.split("\n").filter(Boolean).map((line, j) => <li key={j}>{line}</li>)}
-            </ul>
-          )}
-
-          {lastDelta != null && (
-            <div className={"pn-delta-readout " + (lastDelta > 0 ? "pn-bad" : "pn-good")}>
-              {lastDelta > 0 ? "behind pb pace → " : "ahead of pb pace → "}{fmtDelta(lastDelta)}
-            </div>
-          )}
-
-          <DeltaGraph pointsDelta={deltaSeries.length ? deltaSeries : null} />
-
-          <div className="pn-btn-row" style={{ marginTop: 14 }}>
-            <button className="pn-btn pn-btn-ghost" onClick={toggleRun}>{running ? "Pause" : elapsed === 0 ? "Start" : "Resume"}</button>
-            <button className="pn-btn pn-btn-primary" style={{ flex: 2 }} onClick={doSplit} disabled={!running}>
-              Split → {segIdx + 1 >= route.segments.length ? "Finish" : "next"}
-            </button>
+        <div className="pn-run-grid">
+          <div>
+            <PaceRoller segments={route.segments} currentIdx={segIdx} />
+            {currentSeg.notes && (
+              <ul className="pn-note-steps pn-note-steps-run">
+                {currentSeg.notes.split("\n").filter(Boolean).map((line, j) => <li key={j}>{line}</li>)}
+              </ul>
+            )}
           </div>
-          <button className="pn-btn pn-btn-ghost pn-btn-full" style={{ marginTop: 8 }} onClick={reset}>Reset run</button>
-        </>
+
+          <div>
+            {lastDelta != null && (
+              <div className={"pn-delta-readout " + (lastDelta > 0 ? "pn-bad" : "pn-good")}>
+                {lastDelta > 0 ? "behind pb pace → " : "ahead of pb pace → "}{fmtDelta(lastDelta)}
+              </div>
+            )}
+
+            <DeltaGraph pointsDelta={deltaSeries.length ? deltaSeries : null} />
+
+            <div className="pn-btn-row" style={{ marginTop: 14 }}>
+              <button className="pn-btn pn-btn-ghost" onClick={toggleRun}>{running ? "Pause" : elapsed === 0 ? "Start" : "Resume"}</button>
+              <button className="pn-btn pn-btn-primary" style={{ flex: 2 }} onClick={doSplit} disabled={!running}>
+                Split → {segIdx + 1 >= route.segments.length ? "Finish" : "next"}
+              </button>
+            </div>
+            <button className="pn-btn pn-btn-ghost pn-btn-full" style={{ marginTop: 8 }} onClick={reset}>Reset run</button>
+          </div>
+        </div>
       ) : (
-        <RunSummary route={route} splits={splits} onReset={reset} onExit={onExit} />
+        <div style={{ maxWidth: 640, margin: "0 auto" }}>
+          <RunSummary route={route} splits={splits} onReset={reset} onExit={onExit} />
+        </div>
       )}
     </div>
+  );
+}
+
+function PBBurst() {
+  const sparks = useMemo(
+    () =>
+      Array.from({ length: 12 }).map((_, i) => {
+        const angle = (i / 12) * Math.PI * 2 + Math.random() * 0.3;
+        const dist = 70 + Math.random() * 50;
+        return { sx: Math.cos(angle) * dist, sy: Math.sin(angle) * dist, delay: Math.random() * 120 };
+      }),
+    []
+  );
+  return (
+    <>
+      <span className="pn-pb-ring" />
+      <span className="pn-pb-ring" />
+      {sparks.map((s, i) => (
+        <span key={i} className="pn-pb-spark" style={{ "--sx": `${s.sx}px`, "--sy": `${s.sy}px`, animationDelay: `${s.delay}ms` }} />
+      ))}
+    </>
   );
 }
 
@@ -144,6 +170,7 @@ function RunSummary({ route, splits, onReset, onExit }) {
   return (
     <div>
       <div className={"pn-result-panel" + (isPB ? " pn-result-pb" : "")}>
+        {isPB && <PBBurst />}
         <div className="pn-result-label">{isPB ? "★ new personal best" : "run complete"}</div>
         <FlapClock text={fmt(total, false)} size="md" />
         {bpt != null && <div className="pn-result-sub">{fmtDelta(total - bpt)} off best possible time ({fmt(bpt, false)})</div>}

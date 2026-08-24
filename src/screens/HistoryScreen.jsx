@@ -48,7 +48,7 @@ export default function HistoryScreen({ routeId, onBack }) {
       {runs.length === 0 ? (
         <div className="pn-empty">No runs logged yet. Finish a run to see it here.</div>
       ) : (
-        <div className="pn-ledger">
+        <div className="pn-ledger pn-stagger">
           {runs.map((run, i) => {
             const isPB = route.pb && route.pb.total === run.total;
             return (

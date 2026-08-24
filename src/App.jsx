@@ -15,6 +15,7 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [games, setGames] = useState([]);
   const [routesByGame, setRoutesByGame] = useState({});
+  const [totalRuns, setTotalRuns] = useState(0);
   const [screen, setScreen] = useState("library");
   const [gameId, setGameId] = useState(null);
   const [routeId, setRouteId] = useState(null);
@@ -60,6 +61,11 @@ export default function App() {
       const rb = {};
       for (const game of g) rb[game.id] = await getKey(`pn_routes_${game.id}`, []);
       setRoutesByGame(rb);
+      setTotalRuns(await getKey("pn_total_runs", 0));
+      if (g.length > 0) {
+        setGameId(g[0].id);
+        setScreen("game");
+      }
       setLoading(false);
     })();
   }, []);
@@ -84,6 +90,10 @@ export default function App() {
       await deleteKey(`pn_runs_${r.id}`);
     }
     await deleteKey(`pn_routes_${gId}`);
+    if (gameId === gId) {
+      setGameId(g[0]?.id ?? null);
+      setScreen(g.length ? "game" : "library");
+    }
     flash("Game removed");
   };
 
@@ -108,20 +118,33 @@ export default function App() {
     flash("Route deleted");
   };
 
+  const sidebarProps = {
+    games,
+    activeGameId: screen === "library" ? null : gameId,
+    totalRuns,
+    onHome: () => setScreen("library"),
+    onSelectGame: (id) => { setGameId(id); setScreen("game"); },
+    onAddGame: async (name) => { const id = await addGame(name); setGameId(id); setScreen("game"); },
+    onDeleteGame: deleteGame,
+  };
+
   if (loading) {
     return (
-      <Shell>
+      <Shell sidebarProps={{ games: [], activeGameId: null, totalRuns: 0, onHome() {}, onSelectGame() {}, onAddGame() {}, onDeleteGame() {} }}>
         <div style={{ padding: "60px 20px", textAlign: "center", color: "var(--ink-dim)" }}>Loading…</div>
       </Shell>
     );
   }
 
+  const wide = screen === "run" || screen === "route" || screen === "game" || screen === "library";
+
   return (
-    <Shell toast={toast}>
+    <Shell toast={toast} sidebarProps={sidebarProps} wide={wide}>
       {screen === "library" && (
         <Library
           games={games}
           routesByGame={routesByGame}
+          totalRuns={totalRuns}
           onOpenGame={(id) => { setGameId(id); setScreen("game"); }}
           onAddGame={async (name) => { const id = await addGame(name); setGameId(id); setScreen("game"); }}
           onDeleteGame={deleteGame}
@@ -155,7 +178,11 @@ export default function App() {
         />
       )}
       {screen === "run" && (
-        <RunScreen routeId={routeId} onExit={() => setScreen("route")} onFinished={() => flash("Run saved")} />
+        <RunScreen
+          routeId={routeId}
+          onExit={() => setScreen("route")}
+          onFinished={() => { setTotalRuns((n) => n + 1); flash("Run saved"); }}
+        />
       )}
       {screen === "history" && <HistoryScreen routeId={routeId} onBack={() => setScreen("route")} />}
     </Shell>

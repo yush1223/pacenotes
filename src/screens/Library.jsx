@@ -1,87 +1,119 @@
 import { useState, useEffect } from "react";
 import { getKey } from "../lib/storage";
 import { fmt } from "../lib/time";
+import Sparkline from "../components/Sparkline";
 
-// ---------- library ----------
-export default function Library({ games, routesByGame, onOpenGame, onAddGame, onDeleteGame }) {
+// ---------- home dashboard ----------
+export default function Library({ games, routesByGame, totalRuns, onOpenGame, onAddGame, onDeleteGame }) {
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState("");
-  const [totalRuns, setTotalRuns] = useState(0);
   const [gameStats, setGameStats] = useState({});
 
   useEffect(() => {
     (async () => {
-      setTotalRuns(await getKey("pn_total_runs", 0));
       const stats = {};
       for (const g of games) {
         const routes = routesByGame[g.id] || [];
         let bestPb = null;
+        let sparkVals = null;
+        let mostRuns = 0;
         for (const r of routes) {
           const full = await getKey(`pn_route_${r.id}`, null);
           if (full?.pb && (bestPb == null || full.pb.total < bestPb)) bestPb = full.pb.total;
+          const runs = await getKey(`pn_runs_${r.id}`, []);
+          if (runs.length > mostRuns) {
+            mostRuns = runs.length;
+            sparkVals = runs.slice(0, 8).reverse().map((x) => x.total);
+          }
         }
-        stats[g.id] = { routeCount: routes.length, bestPb };
+        stats[g.id] = { routeCount: routes.length, bestPb, sparkVals };
       }
       setGameStats(stats);
     })();
   }, [games, routesByGame]);
 
+  const submitAdd = () => { if (name.trim()) { onAddGame(name.trim()); setName(""); setAdding(false); } };
+
   return (
     <div className="pn-view">
       <div className="pn-masthead">
         <div className="pn-masthead-mark">PACE NOTES</div>
+        <div className="pn-masthead-tag">Route notes and a live split timer, for any game.</div>
         <div className="pn-masthead-rule" />
         <div className="pn-masthead-readout">
-          {String(games.length).padStart(2, "0")} GAMES LOGGED · {String(totalRuns).padStart(3, "0")} RUNS RECORDED
+          <span className="pn-mono-num">{String(games.length).padStart(2, "0")}</span> games logged · <span className="pn-mono-num">{String(totalRuns).padStart(3, "0")}</span> runs recorded
         </div>
       </div>
 
-      {games.length === 0 && <div className="pn-empty">No games yet. Add the one you're running.</div>}
+      {games.length === 0 && !adding && (
+        <div className="pn-empty-hero">
+          <div className="pn-empty-hero-title">No games yet</div>
+          Log the game you're running to start building a route.
+          <div style={{ marginTop: 18 }}>
+            <button className="pn-btn pn-btn-primary" onClick={() => setAdding(true)}>+ Log a game</button>
+          </div>
+        </div>
+      )}
 
-      <div className="pn-ledger">
+      <div className="pn-tile-grid pn-stagger">
         {games.map((g, i) => {
           const st = gameStats[g.id] || {};
           return (
-            <div className="pn-ledger-row" key={g.id} onClick={() => onOpenGame(g.id)}>
-              <span className="pn-ledger-idx">{String(i + 1).padStart(2, "0")}</span>
-              <span className="pn-ledger-main">
-                <span className="pn-ledger-title">{g.name}</span>
-                <span className="pn-ledger-sub">
-                  {st.routeCount ?? 0} route{st.routeCount === 1 ? "" : "s"}
-                  {st.bestPb != null && <> · best <span className="pn-brass-text">{fmt(st.bestPb, false)}</span></>}
-                </span>
-              </span>
+            <div className="pn-tile" key={g.id} onClick={() => onOpenGame(g.id)}>
               <button
-                className="pn-x"
+                className="pn-tile-x"
                 onClick={(e) => { e.stopPropagation(); if (confirm(`Delete "${g.name}" and all its routes?`)) onDeleteGame(g.id); }}
                 aria-label="Delete game"
               >
                 ✕
               </button>
+              <div className="pn-tile-idx">{String(i + 1).padStart(2, "0")}</div>
+              <div className="pn-tile-title">{g.name}</div>
+              <div className="pn-tile-foot">
+                <div className="pn-instrument-row">
+                  <div className="pn-instrument">
+                    <span className="pn-instrument-label">routes</span>
+                    <span className="pn-mono">{st.routeCount ?? 0}</span>
+                  </div>
+                  <div className="pn-instrument-divider" />
+                  <div className="pn-instrument">
+                    <span className="pn-instrument-label">pb</span>
+                    <span className="pn-mono pn-brass-text">{st.bestPb != null ? fmt(st.bestPb, false) : "—"}</span>
+                  </div>
+                </div>
+                <Sparkline values={st.sparkVals} />
+              </div>
             </div>
           );
         })}
-      </div>
 
-      {adding ? (
-        <div className="pn-inline-form">
-          <input
-            className="pn-input"
-            autoFocus
-            placeholder="Game name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && name.trim()) { onAddGame(name.trim()); setName(""); setAdding(false); }
-              if (e.key === "Escape") setAdding(false);
-            }}
-          />
-          <button className="pn-btn pn-btn-primary" onClick={() => { if (name.trim()) { onAddGame(name.trim()); setName(""); setAdding(false); } }}>Add</button>
-          <button className="pn-btn pn-btn-ghost" onClick={() => setAdding(false)}>Cancel</button>
-        </div>
-      ) : (
-        <button className="pn-btn pn-btn-primary pn-btn-full" onClick={() => setAdding(true)}>+ Log a game</button>
-      )}
+        {(games.length > 0 || adding) &&
+          (adding ? (
+            <div className="pn-tile" style={{ cursor: "default" }} onClick={(e) => e.stopPropagation()}>
+              <div className="pn-label" style={{ marginTop: 0 }}>New game</div>
+              <input
+                className="pn-input"
+                autoFocus
+                placeholder="Game name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") submitAdd();
+                  if (e.key === "Escape") setAdding(false);
+                }}
+              />
+              <div className="pn-btn-row" style={{ marginTop: 10 }}>
+                <button className="pn-btn pn-btn-ghost" onClick={() => setAdding(false)}>Cancel</button>
+                <button className="pn-btn pn-btn-primary" onClick={submitAdd}>Add</button>
+              </div>
+            </div>
+          ) : (
+            <button className="pn-tile-add" onClick={() => setAdding(true)}>
+              <span className="pn-tile-add-plus">+</span>
+              Log a game
+            </button>
+          ))}
+      </div>
     </div>
   );
 }
