@@ -1,14 +1,16 @@
 import { useState } from "react";
 import { useConfirm } from "./ConfirmProvider";
+import GameSearchField from "./GameSearchField";
 
 // ---------- persistent nav sidebar ----------
 export default function Sidebar({ games, activeGameId, totalRuns, onHome, onExplore, onSelectGame, onAddGame, onDeleteGame, userEmail, onSignOut }) {
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState("");
+  const [steamPick, setSteamPick] = useState(null);
   const confirm = useConfirm();
 
   const submit = () => {
-    if (name.trim()) { onAddGame(name.trim()); setName(""); setAdding(false); }
+    if (name.trim()) { onAddGame(name.trim(), steamPick); setName(""); setSteamPick(null); setAdding(false); }
   };
 
   return (
@@ -48,17 +50,18 @@ export default function Sidebar({ games, activeGameId, totalRuns, onHome, onExpl
       </div>
       {adding ? (
         <div className="pn-inline-form" style={{ flexDirection: "column", gap: 6 }}>
-          <input
+          <GameSearchField
             className="pn-input"
+            inputStyle={{ fontSize: 12.5 }}
             autoFocus
             placeholder="Game name"
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={(v) => { setName(v); setSteamPick(null); }}
+            onPick={(r) => { setName(r.name); setSteamPick(r); }}
             onKeyDown={(e) => {
               if (e.key === "Enter") submit();
               if (e.key === "Escape") setAdding(false);
             }}
-            style={{ fontSize: 12.5 }}
           />
           <div className="pn-btn-row">
             <button className="pn-btn pn-btn-ghost" style={{ padding: "6px 8px", fontSize: 11 }} onClick={() => setAdding(false)}>Cancel</button>

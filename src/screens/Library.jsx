@@ -2,12 +2,14 @@ import { useState, useEffect } from "react";
 import * as db from "../lib/db";
 import { fmt } from "../lib/time";
 import Sparkline from "../components/Sparkline";
+import GameSearchField from "../components/GameSearchField";
 import { useConfirm } from "../components/ConfirmProvider";
 
 // ---------- home dashboard ----------
 export default function Library({ games, routesByGame, totalRuns, userId, onOpenGame, onAddGame, onDeleteGame, onExplore }) {
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState("");
+  const [steamPick, setSteamPick] = useState(null);
   const [gameStats, setGameStats] = useState({});
   const confirm = useConfirm();
 
@@ -34,7 +36,7 @@ export default function Library({ games, routesByGame, totalRuns, userId, onOpen
     })();
   }, [games, routesByGame, userId]);
 
-  const submitAdd = () => { if (name.trim()) { onAddGame(name.trim()); setName(""); setAdding(false); } };
+  const submitAdd = () => { if (name.trim()) { onAddGame(name.trim(), steamPick); setName(""); setSteamPick(null); setAdding(false); } };
 
   return (
     <div className="pn-view">
@@ -97,12 +99,13 @@ export default function Library({ games, routesByGame, totalRuns, userId, onOpen
           (adding ? (
             <div className="pn-tile" style={{ cursor: "default" }} onClick={(e) => e.stopPropagation()}>
               <div className="pn-label" style={{ marginTop: 0 }}>New game</div>
-              <input
+              <GameSearchField
                 className="pn-input"
                 autoFocus
                 placeholder="Game name"
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onChange={(v) => { setName(v); setSteamPick(null); }}
+                onPick={(r) => { setName(r.name); setSteamPick(r); }}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") submitAdd();
                   if (e.key === "Escape") setAdding(false);

@@ -55,8 +55,8 @@ export default function App() {
     })();
   }, [userId, reloadLibrary]);
 
-  const addGame = async (name) => {
-    const game = await db.findOrCreateGame({ name });
+  const addGame = async (name, steamInfo) => {
+    const game = await db.findOrCreateGame({ name, steamAppid: steamInfo?.appid, headerImage: steamInfo?.image });
     setGames((prev) => (prev.some((g) => g.id === game.id) ? prev : [...prev, game]));
     setRoutesByGame((prev) => (prev[game.id] ? prev : { ...prev, [game.id]: [] }));
     return game.id;
@@ -106,7 +106,7 @@ export default function App() {
     onHome: () => setScreen("library"),
     onExplore: () => setScreen("explore"),
     onSelectGame: (id) => { setGameId(id); setScreen("game"); },
-    onAddGame: async (name) => { const id = await addGame(name); setGameId(id); setScreen("game"); },
+    onAddGame: async (name, steamInfo) => { const id = await addGame(name, steamInfo); setGameId(id); setScreen("game"); },
     onDeleteGame: deleteGame,
     userEmail: session?.user?.email,
     onSignOut: signOut,
@@ -143,7 +143,7 @@ export default function App() {
           totalRuns={totalRuns}
           userId={userId}
           onOpenGame={(id) => { setGameId(id); setScreen("game"); }}
-          onAddGame={async (name) => { const id = await addGame(name); setGameId(id); setScreen("game"); }}
+          onAddGame={async (name, steamInfo) => { const id = await addGame(name, steamInfo); setGameId(id); setScreen("game"); }}
           onDeleteGame={deleteGame}
           onExplore={() => setScreen("explore")}
         />
