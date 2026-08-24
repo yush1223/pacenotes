@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useConfirm } from "./ConfirmProvider";
 
 // ---------- persistent nav sidebar ----------
-export default function Sidebar({ games, activeGameId, totalRuns, onHome, onSelectGame, onAddGame, onDeleteGame, userEmail, onSignOut }) {
+export default function Sidebar({ games, activeGameId, totalRuns, onHome, onExplore, onSelectGame, onAddGame, onDeleteGame, userEmail, onSignOut }) {
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState("");
   const confirm = useConfirm();
@@ -18,7 +18,14 @@ export default function Sidebar({ games, activeGameId, totalRuns, onHome, onSele
       </button>
       <div className="pn-sidebar-rule" />
 
-      <div className="pn-sidebar-section-label">Games</div>
+      <div className="pn-sidebar-nav" style={{ marginBottom: 14 }}>
+        <button className="pn-nav-item" onClick={onExplore}>
+          <span className="pn-nav-item-idx">→</span>
+          <span className="pn-nav-item-name">Explore</span>
+        </button>
+      </div>
+
+      <div className="pn-sidebar-section-label">My library</div>
       <div className="pn-sidebar-nav">
         {games.map((g, i) => (
           <button
@@ -30,9 +37,9 @@ export default function Sidebar({ games, activeGameId, totalRuns, onHome, onSele
             <span className="pn-nav-item-name">{g.name}</span>
             <span
               className="pn-nav-item-x"
-              onClick={async (e) => { e.stopPropagation(); if (await confirm(`Delete "${g.name}" and all its routes?`)) onDeleteGame(g.id); }}
+              onClick={async (e) => { e.stopPropagation(); if (await confirm(`Remove "${g.name}" from your library? Any routes you own for it are deleted too — routes you're just following stay untouched for their owner.`)) onDeleteGame(g.id); }}
               role="button"
-              aria-label={`Delete ${g.name}`}
+              aria-label={`Remove ${g.name}`}
             >
               ✕
             </span>

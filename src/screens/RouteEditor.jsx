@@ -1,27 +1,30 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { uid } from "../lib/storage";
-import { fmt, parseTargetInput, toDurations } from "../lib/time";
+import { fmt, parseTargetInput } from "../lib/time";
+import * as db from "../lib/db";
 import BackHead from "../components/BackHead";
 import Switch from "../components/Switch";
 
 // ---------- route editor ----------
-export default function RouteEditor({ gameId, initial, onCancel, onSave }) {
+export default function RouteEditor({ gameId, initial, userId, onCancel, onSave }) {
   const [name, setName] = useState(initial?.name || "");
-  const [targetStr, setTargetStr] = useState(initial?.target != null ? fmt(initial.target, false) : "");
-  const [useTarget, setUseTarget] = useState(initial?.useTarget !== false);
-  // PB is read-only reference here, for context while setting targets —
-  // carried per-segment (not looked up by array index) so it stays
-  // attached to the right segment even if you reorder while editing.
-  const pbDurations = initial?.pb ? toDurations(initial.pb.segments) : null;
+  const [targetStr, setTargetStr] = useState(initial?.target_ms != null ? fmt(initial.target_ms, false) : "");
+  const [useTarget, setUseTarget] = useState(initial?.use_target !== false);
+  const [pb, setPb] = useState(null);
   const [segments, setSegments] = useState(
     initial?.segments?.length
-      ? initial.segments.map((s, i) => ({
-          ...s,
-          targetStr: initial.targets?.[i] != null ? fmt(initial.targets[i], false) : "",
-          pbMs: pbDurations && pbDurations[i] != null ? pbDurations[i] : null,
-        }))
+      ? initial.segments.map((s) => ({ ...s, targetStr: s.target_ms != null ? fmt(s.target_ms, false) : "" }))
       : [{ id: uid(), title: "", notes: "", targetStr: "" }]
   );
+
+  // PB is read-only reference here, for context while setting targets. It
+  // lives in a separate per-user table now, so it needs its own fetch.
+  useEffect(() => {
+    if (!initial?.id) return;
+    db.getPB(initial.id, userId).then(setPb);
+  }, [initial?.id, userId]);
+  const pbBySegId = {};
+  if (pb) initial.segments.forEach((s, i) => { pbBySegId[s.id] = toDuration(pb.splits, i); });
 
   const updateSeg = (idx, field, val) => setSegments((segs) => segs.map((s, i) => (i === idx ? { ...s, [field]: val } : s)));
   const addSeg = () => setSegments((segs) => [...segs, { id: uid(), title: "", notes: "", targetStr: "" }]);
@@ -38,29 +41,32 @@ export default function RouteEditor({ gameId, initial, onCancel, onSave }) {
 
   const handleSave = () => {
     const kept = segments.filter((s) => s.title.trim());
-    const cleanSegs = kept.map((s) => ({ id: s.id, title: s.title.trim(), notes: s.notes || "" }));
+    const cleanSegs = kept.map((s) => ({
+      id: s.id,
+      title: s.title.trim(),
+      notes: s.notes || "",
+      target_ms: useTarget ? parseTargetInput(s.targetStr) : null,
+    }));
     onSave({
-      id: initial?.id || uid(),
-      gameId,
+      id: initial?.id,
+      game_id: gameId,
       name: name.trim(),
       // Target is an all-or-nothing optional feature — switching it off
       // clears the stored values too, not just the display, so "off"
       // really means gone, not just hidden.
-      target: useTarget ? parseTargetInput(targetStr) : null,
+      target_ms: useTarget ? parseTargetInput(targetStr) : null,
       segments: cleanSegs,
-      pb: initial?.pb || null,
-      targets: useTarget ? kept.map((s) => parseTargetInput(s.targetStr)) : kept.map(() => null),
-      useTarget,
+      use_target: useTarget,
     });
   };
 
   return (
     <div className="pn-view">
       <BackHead onBack={onCancel} eyebrow={initial ? "Edit route" : "New route"} title="Route editor" />
-      {initial?.pb && (
+      {pb && (
         <div className="pn-editor-pb-note">
           <span className="pn-editor-pb-note-label">personal best</span>
-          <span className="pn-mono pn-brass-text">{fmt(initial.pb.total, false)}</span>
+          <span className="pn-mono pn-brass-text">{fmt(pb.total_ms, false)}</span>
           <span className="pn-editor-pb-note-hint">set by your best run — not editable here</span>
         </div>
       )}
@@ -88,9 +94,9 @@ export default function RouteEditor({ gameId, initial, onCancel, onSave }) {
             <div className="pn-seg-editor-body">
               <div className="pn-seg-editor-toprow">
                 <input className="pn-input" placeholder="Segment title" value={s.title} onChange={(e) => updateSeg(i, "title", e.target.value)} />
-                {s.pbMs != null && (
+                {pbBySegId[s.id] != null && (
                   <span className="pn-seg-editor-pb" title="Personal best for this segment (read-only)">
-                    pb {fmt(s.pbMs, false)}
+                    pb {fmt(pbBySegId[s.id], false)}
                   </span>
                 )}
                 {useTarget && (
@@ -124,4 +130,9 @@ export default function RouteEditor({ gameId, initial, onCancel, onSave }) {
       </div>
     </div>
   );
+}
+
+function toDuration(cumulativeSplits, i) {
+  if (!cumulativeSplits || cumulativeSplits[i] == null) return null;
+  return i === 0 ? cumulativeSplits[0] : cumulativeSplits[i] - cumulativeSplits[i - 1];
 }

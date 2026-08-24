@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
-import { getKey } from "../lib/storage";
+import * as db from "../lib/db";
 import { fmt } from "../lib/time";
 import Sparkline from "../components/Sparkline";
 import { useConfirm } from "../components/ConfirmProvider";
 
 // ---------- home dashboard ----------
-export default function Library({ games, routesByGame, totalRuns, onOpenGame, onAddGame, onDeleteGame }) {
+export default function Library({ games, routesByGame, totalRuns, userId, onOpenGame, onAddGame, onDeleteGame, onExplore }) {
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState("");
   const [gameStats, setGameStats] = useState({});
@@ -20,19 +20,19 @@ export default function Library({ games, routesByGame, totalRuns, onOpenGame, on
         let sparkVals = null;
         let mostRuns = 0;
         for (const r of routes) {
-          const full = await getKey(`pn_route_${r.id}`, null);
-          if (full?.pb && (bestPb == null || full.pb.total < bestPb)) bestPb = full.pb.total;
-          const runs = await getKey(`pn_runs_${r.id}`, []);
+          const pb = await db.getPB(r.id, userId);
+          if (pb && (bestPb == null || pb.total_ms < bestPb)) bestPb = pb.total_ms;
+          const runs = await db.listRuns(r.id, userId, 8);
           if (runs.length > mostRuns) {
             mostRuns = runs.length;
-            sparkVals = runs.slice(0, 8).reverse().map((x) => x.total);
+            sparkVals = runs.slice().reverse().map((x) => x.total_ms);
           }
         }
         stats[g.id] = { routeCount: routes.length, bestPb, sparkVals };
       }
       setGameStats(stats);
     })();
-  }, [games, routesByGame]);
+  }, [games, routesByGame, userId]);
 
   const submitAdd = () => { if (name.trim()) { onAddGame(name.trim()); setName(""); setAdding(false); } };
 
@@ -47,10 +47,14 @@ export default function Library({ games, routesByGame, totalRuns, onOpenGame, on
         </div>
       </div>
 
+      <button className="pn-btn pn-btn-ghost pn-btn-full" style={{ marginBottom: 20 }} onClick={onExplore}>
+        Explore public guides →
+      </button>
+
       {games.length === 0 && !adding && (
         <div className="pn-empty-hero">
           <div className="pn-empty-hero-title">No games yet</div>
-          Log the game you're running to start building a route.
+          Log the game you're running to start building a route, or find one someone's already published in Explore.
           <div style={{ marginTop: 18 }}>
             <button className="pn-btn pn-btn-primary" onClick={() => setAdding(true)}>+ Log a game</button>
           </div>
@@ -64,8 +68,8 @@ export default function Library({ games, routesByGame, totalRuns, onOpenGame, on
             <div className="pn-tile" key={g.id} onClick={() => onOpenGame(g.id)}>
               <button
                 className="pn-tile-x"
-                onClick={async (e) => { e.stopPropagation(); if (await confirm(`Delete "${g.name}" and all its routes?`)) onDeleteGame(g.id); }}
-                aria-label="Delete game"
+                onClick={async (e) => { e.stopPropagation(); if (await confirm(`Remove "${g.name}" from your library?`)) onDeleteGame(g.id); }}
+                aria-label="Remove game"
               >
                 ✕
               </button>

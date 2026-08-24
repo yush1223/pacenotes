@@ -1,8 +1,6 @@
-import { useState, useEffect } from "react";
-import { getKey, setKey, deleteKey, uid } from "./lib/storage";
-import { toDurations } from "./lib/time";
-import { SEED_ROUTE_ID, SEED_GAME_ID, seedSegments, seedFakeRuns } from "./lib/seed";
+import { useState, useEffect, useCallback } from "react";
 import { getSession, onAuthStateChange, signOut } from "./lib/auth";
+import * as db from "./lib/db";
 import Shell from "./components/Shell";
 import AuthScreen from "./screens/AuthScreen";
 import Library from "./screens/Library";
@@ -11,14 +9,11 @@ import RouteEditor from "./screens/RouteEditor";
 import RouteDetail from "./screens/RouteDetail";
 import RunScreen from "./screens/RunScreen";
 import HistoryScreen from "./screens/HistoryScreen";
+import Explore from "./screens/Explore";
 
 // ---------- root ----------
 export default function App() {
   // undefined = still checking for a session, null = signed out.
-  // NOTE: the data below this point is still the old localStorage layer,
-  // shared by whichever browser profile has it — not yet scoped per
-  // account. That's the next phase (games/routes/runs moving to
-  // Supabase); this phase is just the account gate in front of the app.
   const [session, setSession] = useState(undefined);
   const [loading, setLoading] = useState(true);
   const [games, setGames] = useState([]);
@@ -31,6 +26,8 @@ export default function App() {
   const [editorReturn, setEditorReturn] = useState("game");
   const [toast, setToast] = useState(null);
 
+  const userId = session?.user?.id;
+
   const flash = (msg) => {
     setToast(msg);
     setTimeout(() => setToast(null), 2200);
@@ -42,102 +39,72 @@ export default function App() {
     return () => sub.unsubscribe();
   }, []);
 
+  const reloadLibrary = useCallback(async () => {
+    if (!userId) return;
+    const { games: g, routesByGame: rb } = await db.listMyGamesWithRoutes();
+    setGames(g);
+    setRoutesByGame(rb);
+    setTotalRuns(await db.countMyRuns(userId));
+  }, [userId]);
+
   useEffect(() => {
-    if (!session) return;
+    if (!userId) return;
     (async () => {
-      let g = await getKey("pn_games", null);
-      if (!g) {
-        g = [{ id: SEED_GAME_ID, name: "How to Fish" }];
-        await setKey("pn_games", g);
-        await setKey(`pn_routes_${SEED_GAME_ID}`, [{ id: SEED_ROUTE_ID, name: "Any% — skip-heavy" }]);
-        const runs = seedFakeRuns();
-        const pbRun = runs.reduce((best, r) => (!best || r.total < best.total ? r : best), null);
-        const gold = seedSegments().map((_, i) => {
-          let best = null;
-          for (const r of runs) {
-            const durs = toDurations(r.segments);
-            if (best == null || durs[i] < best) best = durs[i];
-          }
-          return best;
-        });
-        await setKey(`pn_route_${SEED_ROUTE_ID}`, {
-          id: SEED_ROUTE_ID,
-          gameId: SEED_GAME_ID,
-          name: "Any% — skip-heavy",
-          target: 11 * 60000 + 14000,
-          segments: seedSegments(),
-          pb: { segments: pbRun.segments, total: pbRun.total },
-          gold,
-        });
-        await setKey(`pn_runs_${SEED_ROUTE_ID}`, runs.slice().reverse());
-        await setKey("pn_total_runs", runs.length);
-      }
-      setGames(g);
-      const rb = {};
-      for (const game of g) rb[game.id] = await getKey(`pn_routes_${game.id}`, []);
-      setRoutesByGame(rb);
-      setTotalRuns(await getKey("pn_total_runs", 0));
-      if (g.length > 0) {
-        setGameId(g[0].id);
-        setScreen("game");
-      }
+      await reloadLibrary();
       setLoading(false);
     })();
-  }, [session]);
+  }, [userId, reloadLibrary]);
 
   const addGame = async (name) => {
-    const newGame = { id: uid(), name };
-    const g = [...games, newGame];
-    setGames(g);
-    await setKey("pn_games", g);
-    await setKey(`pn_routes_${newGame.id}`, []);
-    setRoutesByGame((prev) => ({ ...prev, [newGame.id]: [] }));
-    return newGame.id;
+    const game = await db.findOrCreateGame({ name });
+    setGames((prev) => (prev.some((g) => g.id === game.id) ? prev : [...prev, game]));
+    setRoutesByGame((prev) => (prev[game.id] ? prev : { ...prev, [game.id]: [] }));
+    return game.id;
   };
 
   const deleteGame = async (gId) => {
-    const g = games.filter((x) => x.id !== gId);
-    setGames(g);
-    await setKey("pn_games", g);
-    const routes = routesByGame[gId] || [];
-    for (const r of routes) {
-      await deleteKey(`pn_route_${r.id}`);
-      await deleteKey(`pn_runs_${r.id}`);
-    }
-    await deleteKey(`pn_routes_${gId}`);
+    await db.removeGameFromMyLibrary(gId, userId);
+    setGames((prev) => prev.filter((g) => g.id !== gId));
+    setRoutesByGame((prev) => {
+      const next = { ...prev };
+      delete next[gId];
+      return next;
+    });
     if (gameId === gId) {
-      setGameId(g[0]?.id ?? null);
-      setScreen(g.length ? "game" : "library");
+      setGameId(null);
+      setScreen("library");
     }
-    flash("Game removed");
+    flash("Removed from your library");
   };
 
   const saveRoute = async (route) => {
-    const routes = routesByGame[route.gameId] || [];
-    const exists = routes.some((r) => r.id === route.id);
-    const newRoutes = exists
-      ? routes.map((r) => (r.id === route.id ? { id: route.id, name: route.name } : r))
-      : [...routes, { id: route.id, name: route.name }];
-    await setKey(`pn_routes_${route.gameId}`, newRoutes);
-    await setKey(`pn_route_${route.id}`, route);
-    setRoutesByGame((prev) => ({ ...prev, [route.gameId]: newRoutes }));
+    const saved = await db.saveRoute(route, userId);
+    setRoutesByGame((prev) => {
+      const list = prev[saved.game_id] || [];
+      const exists = list.some((r) => r.id === saved.id);
+      const next = exists ? list.map((r) => (r.id === saved.id ? saved : r)) : [...list, saved];
+      return { ...prev, [saved.game_id]: next };
+    });
+    if (!games.some((g) => g.id === saved.game_id)) {
+      const game = await db.getGame(saved.game_id);
+      setGames((prev) => [...prev, game]);
+    }
     flash("Route saved");
+    return saved;
   };
 
   const deleteRoute = async (route) => {
-    const routes = (routesByGame[route.gameId] || []).filter((r) => r.id !== route.id);
-    await setKey(`pn_routes_${route.gameId}`, routes);
-    await deleteKey(`pn_route_${route.id}`);
-    await deleteKey(`pn_runs_${route.id}`);
-    setRoutesByGame((prev) => ({ ...prev, [route.gameId]: routes }));
+    await db.deleteRoute(route.id);
+    setRoutesByGame((prev) => ({ ...prev, [route.game_id]: (prev[route.game_id] || []).filter((r) => r.id !== route.id) }));
     flash("Route deleted");
   };
 
   const sidebarProps = {
     games,
-    activeGameId: screen === "library" ? null : gameId,
+    activeGameId: screen === "library" || screen === "explore" ? null : gameId,
     totalRuns,
     onHome: () => setScreen("library"),
+    onExplore: () => setScreen("explore"),
     onSelectGame: (id) => { setGameId(id); setScreen("game"); },
     onAddGame: async (name) => { const id = await addGame(name); setGameId(id); setScreen("game"); },
     onDeleteGame: deleteGame,
@@ -159,13 +126,13 @@ export default function App() {
 
   if (loading) {
     return (
-      <Shell sidebarProps={{ games: [], activeGameId: null, totalRuns: 0, onHome() {}, onSelectGame() {}, onAddGame() {}, onDeleteGame() {} }}>
+      <Shell sidebarProps={{ games: [], activeGameId: null, totalRuns: 0, onHome() {}, onExplore() {}, onSelectGame() {}, onAddGame() {}, onDeleteGame() {} }}>
         <div style={{ padding: "60px 20px", textAlign: "center", color: "var(--ink-dim)" }}>Loading…</div>
       </Shell>
     );
   }
 
-  const wide = screen === "run" || screen === "route" || screen === "game" || screen === "library";
+  const wide = screen === "run" || screen === "route" || screen === "game" || screen === "library" || screen === "explore";
 
   return (
     <Shell toast={toast} sidebarProps={sidebarProps} wide={wide}>
@@ -174,15 +141,31 @@ export default function App() {
           games={games}
           routesByGame={routesByGame}
           totalRuns={totalRuns}
+          userId={userId}
           onOpenGame={(id) => { setGameId(id); setScreen("game"); }}
           onAddGame={async (name) => { const id = await addGame(name); setGameId(id); setScreen("game"); }}
           onDeleteGame={deleteGame}
+          onExplore={() => setScreen("explore")}
+        />
+      )}
+      {screen === "explore" && (
+        <Explore
+          userId={userId}
+          onBack={() => setScreen("library")}
+          onOpenRoute={async (route) => {
+            await db.addToLibrary(route.id, userId);
+            await reloadLibrary();
+            setRouteId(route.id);
+            setScreen("route");
+            flash(`Added "${route.name}" to your library`);
+          }}
         />
       )}
       {screen === "game" && (
         <GameDetail
-          game={games.find((g) => g.id === gameId)}
+          game={games.find((g) => g.id === gameId) || { id: gameId, name: "" }}
           routes={routesByGame[gameId] || []}
+          userId={userId}
           onBack={() => setScreen("library")}
           onOpenRoute={(id) => { setRouteId(id); setScreen("route"); }}
           onNewRoute={() => { setEditingRoute(null); setEditorReturn("game"); setScreen("editor"); }}
@@ -192,28 +175,32 @@ export default function App() {
         <RouteEditor
           gameId={gameId}
           initial={editingRoute}
+          userId={userId}
           onCancel={() => setScreen(editorReturn === "route" ? "route" : "game")}
-          onSave={async (route) => { await saveRoute(route); setRouteId(route.id); setScreen("route"); }}
+          onSave={async (route) => { const saved = await saveRoute(route); setRouteId(saved.id); setScreen("route"); }}
         />
       )}
       {screen === "route" && (
         <RouteDetail
           routeId={routeId}
-          onBack={() => setScreen("game")}
+          userId={userId}
+          onBack={() => setScreen(gameId ? "game" : "explore")}
           onEdit={(route) => { setEditingRoute(route); setEditorReturn("route"); setScreen("editor"); }}
           onDelete={async (route) => { await deleteRoute(route); setScreen("game"); }}
           onStartRun={() => setScreen("run")}
           onHistory={() => setScreen("history")}
+          onVisibilityChange={reloadLibrary}
         />
       )}
       {screen === "run" && (
         <RunScreen
           routeId={routeId}
+          userId={userId}
           onExit={() => setScreen("route")}
           onFinished={() => { setTotalRuns((n) => n + 1); flash("Run saved"); }}
         />
       )}
-      {screen === "history" && <HistoryScreen routeId={routeId} onBack={() => setScreen("route")} />}
+      {screen === "history" && <HistoryScreen routeId={routeId} userId={userId} onBack={() => setScreen("route")} />}
     </Shell>
   );
 }

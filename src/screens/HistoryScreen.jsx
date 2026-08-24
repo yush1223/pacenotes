@@ -1,22 +1,24 @@
 import { useState, useEffect } from "react";
-import { getKey } from "../lib/storage";
+import * as db from "../lib/db";
 import { fmt, relTime } from "../lib/time";
 import BackHead from "../components/BackHead";
 
 // ---------- history ----------
-export default function HistoryScreen({ routeId, onBack }) {
+export default function HistoryScreen({ routeId, userId, onBack }) {
   const [route, setRoute] = useState(null);
+  const [pb, setPb] = useState(null);
   const [runs, setRuns] = useState([]);
 
   useEffect(() => {
     (async () => {
-      setRoute(await getKey(`pn_route_${routeId}`, null));
-      setRuns(await getKey(`pn_runs_${routeId}`, []));
+      setRoute(await db.getRoute(routeId));
+      setPb(await db.getPB(routeId, userId));
+      setRuns(await db.listRuns(routeId, userId, 25));
     })();
-  }, [routeId]);
+  }, [routeId, userId]);
 
   if (!route) return <div className="pn-view">Loading…</div>;
-  const trendVals = runs.length > 1 ? runs.slice().reverse().map((r) => r.total) : null;
+  const trendVals = runs.length > 1 ? runs.slice().reverse().map((r) => r.total_ms) : null;
 
   return (
     <div className="pn-view">
@@ -50,13 +52,13 @@ export default function HistoryScreen({ routeId, onBack }) {
       ) : (
         <div className="pn-ledger pn-stagger">
           {runs.map((run, i) => {
-            const isPB = route.pb && route.pb.total === run.total;
+            const isPB = pb && pb.total_ms === run.total_ms;
             return (
-              <div className="pn-ledger-row pn-ledger-row-static" key={i}>
+              <div className="pn-ledger-row pn-ledger-row-static" key={run.id}>
                 <span className={"pn-ledger-idx" + (isPB ? " pn-brass-text" : "")}>{isPB ? "★" : String(runs.length - i).padStart(2, "0")}</span>
                 <span className="pn-ledger-main">
-                  <span className="pn-ledger-title pn-mono">{fmt(run.total, false)}{isPB && <span className="pn-brass-text"> — PB</span>}</span>
-                  <span className="pn-ledger-sub">{relTime(run.date)}</span>
+                  <span className="pn-ledger-title pn-mono">{fmt(run.total_ms, false)}{isPB && <span className="pn-brass-text"> — PB</span>}</span>
+                  <span className="pn-ledger-sub">{relTime(new Date(run.created_at).getTime())}</span>
                 </span>
               </div>
             );

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { getKey, setKey } from "../lib/storage";
+import * as db from "../lib/db";
 import { fmt, fmtDelta, toDurations } from "../lib/time";
 import BackHead from "../components/BackHead";
 import FlapClock from "../components/FlapClock";
@@ -8,18 +8,25 @@ import DeltaGraph from "../components/DeltaGraph";
 import { useConfirm } from "../components/ConfirmProvider";
 
 // ---------- run screen ----------
-export default function RunScreen({ routeId, onExit, onFinished }) {
+export default function RunScreen({ routeId, userId, onExit, onFinished }) {
   const confirm = useConfirm();
   const [route, setRoute] = useState(null);
+  const [pb, setPb] = useState(null);
   const [running, setRunning] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [segIdx, setSegIdx] = useState(0);
   const [splits, setSplits] = useState([]);
   const [finished, setFinished] = useState(false);
+  const [result, setResult] = useState(null);
   const startRef = useRef(null);
   const rafRef = useRef(null);
 
-  useEffect(() => { (async () => setRoute(await getKey(`pn_route_${routeId}`, null)))(); }, [routeId]);
+  useEffect(() => {
+    (async () => {
+      setRoute(await db.getRoute(routeId));
+      setPb(await db.getPB(routeId, userId));
+    })();
+  }, [routeId, userId]);
 
   const tick = useCallback(() => {
     if (!startRef.current) return;
@@ -45,6 +52,7 @@ export default function RunScreen({ routeId, onExit, onFinished }) {
     setSegIdx(0);
     setSplits([]);
     setFinished(false);
+    setResult(null);
     startRef.current = null;
   };
 
@@ -57,18 +65,13 @@ export default function RunScreen({ routeId, onExit, onFinished }) {
     if (segIdx + 1 >= route.segments.length) {
       setRunning(false);
       cancelAnimationFrame(rafRef.current);
-      setFinished(true);
 
       const total = now;
-      const isNewPB = !route.pb || total < route.pb.total;
-      const updatedRoute = { ...route, pb: isNewPB ? { segments: newSplits, total } : route.pb };
-      await setKey(`pn_route_${route.id}`, updatedRoute);
-      setRoute(updatedRoute);
-
-      const runs = await getKey(`pn_runs_${route.id}`, []);
-      await setKey(`pn_runs_${route.id}`, [{ date: Date.now(), total, segments: newSplits }, ...runs].slice(0, 25));
-      const tr = await getKey("pn_total_runs", 0);
-      await setKey("pn_total_runs", tr + 1);
+      const prevPb = pb;
+      const { isNewPB } = await db.finishRun(route.id, userId, total, newSplits);
+      if (isNewPB) setPb({ total_ms: total, splits: newSplits });
+      setResult({ total, splits: newSplits, prevPb, isNewPB });
+      setFinished(true);
       onFinished();
     } else {
       setSegIdx(segIdx + 1);
@@ -77,7 +80,7 @@ export default function RunScreen({ routeId, onExit, onFinished }) {
 
   if (!route) return <div className="pn-view">Loading…</div>;
 
-  const pbAtSplit = (i) => (route.pb && route.pb.segments[i] != null ? route.pb.segments[i] : null);
+  const pbAtSplit = (i) => (pb && pb.splits[i] != null ? pb.splits[i] : null);
   const currentSeg = route.segments[segIdx];
   const deltaSeries = splits.map((s, i) => (pbAtSplit(i) != null ? s - pbAtSplit(i) : null)).filter((d) => d != null);
   const lastDelta = deltaSeries.length ? deltaSeries[deltaSeries.length - 1] : null;
@@ -89,12 +92,12 @@ export default function RunScreen({ routeId, onExit, onFinished }) {
   // counts, even as a fallback. Each aim tracks its own source so the UI
   // can label it (and give PB the brass treatment every other "record"
   // gets here). Once a PB exists, target stops driving anything — it just
-  // rides along as a plain reference number, per route.useTarget.
-  const useTarget = route.useTarget !== false;
-  const pbDurations = route.pb ? toDurations(route.pb.segments) : null;
-  const aims = route.segments.map((_, i) => {
+  // rides along as a plain reference number, per route.use_target.
+  const useTarget = route.use_target !== false;
+  const pbDurations = pb ? toDurations(pb.splits) : null;
+  const aims = route.segments.map((seg, i) => {
     if (pbDurations && pbDurations[i] != null) return { value: pbDurations[i], isPb: true };
-    if (useTarget && route.targets && route.targets[i] != null) return { value: route.targets[i], isPb: false };
+    if (useTarget && seg.target_ms != null) return { value: seg.target_ms, isPb: false };
     return null;
   });
   const actualDurations = toDurations(splits);
@@ -109,7 +112,7 @@ export default function RunScreen({ routeId, onExit, onFinished }) {
   const liveSegDelta = currentAim != null && elapsed > 0 ? elapsedInSeg - currentAim.value : null;
   // Shown only as an extra reference alongside the PB comparison, never
   // driving the color/delta itself, when the primary aim above is a PB.
-  const currentTargetRef = useTarget && route.targets && route.targets[segIdx] != null ? route.targets[segIdx] : null;
+  const currentTargetRef = useTarget && currentSeg.target_ms != null ? currentSeg.target_ms : null;
 
   // Live bar for the graph specifically compares against PB only (the
   // graph is captioned "vs personal best" — target isn't part of that
@@ -176,7 +179,7 @@ export default function RunScreen({ routeId, onExit, onFinished }) {
         </div>
       ) : (
         <div style={{ maxWidth: 640, margin: "0 auto" }}>
-          <RunSummary route={route} splits={splits} onReset={reset} onExit={onExit} />
+          <RunSummary route={route} result={result} onReset={reset} onExit={onExit} />
         </div>
       )}
     </div>
@@ -204,22 +207,21 @@ function PBBurst() {
   );
 }
 
-function RunSummary({ route, splits, onReset, onExit }) {
-  const total = splits[splits.length - 1];
-  const isPB = route.pb && route.pb.total === total;
+function RunSummary({ route, result, onReset, onExit }) {
+  const { total, splits, prevPb, isNewPB } = result;
   const durations = toDurations(splits);
-  const deltaSeries = route.pb ? splits.map((s, i) => s - (isPB ? (route.pb.segments[i] ?? s) : route.pb.segments[i])) : [];
-  const useTarget = route.useTarget !== false;
+  const deltaSeries = prevPb ? splits.map((s, i) => s - (prevPb.splits[i] ?? s)) : [];
+  const useTarget = route.use_target !== false;
 
   return (
     <div>
-      <div className={"pn-result-panel" + (isPB ? " pn-result-pb" : "")}>
-        {isPB && <PBBurst />}
-        <div className="pn-result-label">{isPB ? "★ new personal best" : "run complete"}</div>
+      <div className={"pn-result-panel" + (isNewPB ? " pn-result-pb" : "")}>
+        {isNewPB && <PBBurst />}
+        <div className="pn-result-label">{isNewPB ? "★ new personal best" : "run complete"}</div>
         <FlapClock text={fmt(total, false)} size="md" />
       </div>
 
-      {!isPB && deltaSeries.length > 0 && <DeltaGraph pointsDelta={deltaSeries} />}
+      {!isNewPB && deltaSeries.length > 0 && <DeltaGraph pointsDelta={deltaSeries} />}
 
       <table className="pn-split-table">
         <thead>
@@ -228,9 +230,9 @@ function RunSummary({ route, splits, onReset, onExit }) {
         <tbody>
           {route.segments.map((s, i) => {
             const segTime = durations[i];
-            const pbCum = route.pb && !isPB ? route.pb.segments[i] : null;
+            const pbCum = !isNewPB && prevPb ? prevPb.splits[i] : null;
             const delta = pbCum != null ? splits[i] - pbCum : null;
-            const target = useTarget && route.targets && route.targets[i] != null ? route.targets[i] : null;
+            const target = useTarget && s.target_ms != null ? s.target_ms : null;
             const targetDelta = target != null ? segTime - target : null;
             return (
               <tr key={s.id}>
