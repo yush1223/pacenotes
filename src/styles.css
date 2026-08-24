@@ -308,6 +308,14 @@ button, input, textarea, select { font-family: inherit; }
 .pn-seg-editor-toprow { display: flex; gap: 8px; }
 .pn-seg-editor-toprow .pn-input:first-child { flex: 1; min-width: 0; }
 .pn-seg-editor-target { width: 84px; flex-shrink: 0; text-align: center; }
+.pn-seg-editor-pb {
+  display: flex; align-items: center; justify-content: center; width: 84px; flex-shrink: 0; height: 39px;
+  font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--brass);
+  border: 1px solid var(--hairline); border-radius: 2px; background: var(--panel);
+}
+.pn-editor-pb-note { display: flex; align-items: baseline; gap: 10px; margin-bottom: 16px; }
+.pn-editor-pb-note-label { font-family: 'JetBrains Mono', monospace; font-size: 10.5px; font-weight: 600; letter-spacing: 0.08em; color: var(--ink-dim); text-transform: uppercase; }
+.pn-editor-pb-note-hint { font-size: 11.5px; color: var(--ink-dim); }
 
 /* ---------- gauges ---------- */
 .pn-gauge-panel { display: flex; align-items: center; background: var(--panel); border: 1px solid var(--hairline); border-radius: 2px; padding: 16px 10px; margin-bottom: 20px; }

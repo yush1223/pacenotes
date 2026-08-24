@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { uid } from "../lib/storage";
-import { fmt, parseTargetInput } from "../lib/time";
+import { fmt, parseTargetInput, toDurations } from "../lib/time";
 import BackHead from "../components/BackHead";
 import Switch from "../components/Switch";
 
@@ -9,11 +9,16 @@ export default function RouteEditor({ gameId, initial, onCancel, onSave }) {
   const [name, setName] = useState(initial?.name || "");
   const [targetStr, setTargetStr] = useState(initial?.target != null ? fmt(initial.target, false) : "");
   const [useTarget, setUseTarget] = useState(initial?.useTarget !== false);
+  // PB is read-only reference here, for context while setting targets —
+  // carried per-segment (not looked up by array index) so it stays
+  // attached to the right segment even if you reorder while editing.
+  const pbDurations = initial?.pb ? toDurations(initial.pb.segments) : null;
   const [segments, setSegments] = useState(
     initial?.segments?.length
       ? initial.segments.map((s, i) => ({
           ...s,
           targetStr: initial.targets?.[i] != null ? fmt(initial.targets[i], false) : "",
+          pbMs: pbDurations && pbDurations[i] != null ? pbDurations[i] : null,
         }))
       : [{ id: uid(), title: "", notes: "", targetStr: "" }]
   );
@@ -52,6 +57,13 @@ export default function RouteEditor({ gameId, initial, onCancel, onSave }) {
   return (
     <div className="pn-view">
       <BackHead onBack={onCancel} eyebrow={initial ? "Edit route" : "New route"} title="Route editor" />
+      {initial?.pb && (
+        <div className="pn-editor-pb-note">
+          <span className="pn-editor-pb-note-label">personal best</span>
+          <span className="pn-mono pn-brass-text">{fmt(initial.pb.total, false)}</span>
+          <span className="pn-editor-pb-note-hint">set by your best run — not editable here</span>
+        </div>
+      )}
       <label className="pn-label">Route name</label>
       <input className="pn-input" placeholder="e.g. Any% — no major glitches" value={name} onChange={(e) => setName(e.target.value)} />
 
@@ -76,6 +88,11 @@ export default function RouteEditor({ gameId, initial, onCancel, onSave }) {
             <div className="pn-seg-editor-body">
               <div className="pn-seg-editor-toprow">
                 <input className="pn-input" placeholder="Segment title" value={s.title} onChange={(e) => updateSeg(i, "title", e.target.value)} />
+                {s.pbMs != null && (
+                  <span className="pn-seg-editor-pb" title="Personal best for this segment (read-only)">
+                    pb {fmt(s.pbMs, false)}
+                  </span>
+                )}
                 {useTarget && (
                   <input
                     className="pn-input pn-input-mono pn-seg-editor-target"
