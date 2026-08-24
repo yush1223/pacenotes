@@ -36,7 +36,7 @@ export default function Library({ games, routesByGame, totalRuns, userId, onOpen
     })();
   }, [games, routesByGame, userId]);
 
-  const submitAdd = () => { if (name.trim()) { onAddGame(name.trim(), steamPick); setName(""); setSteamPick(null); setAdding(false); } };
+  const submitAdd = () => { if (steamPick) { onAddGame(steamPick.name, steamPick); setName(""); setSteamPick(null); setAdding(false); } };
 
   return (
     <div className="pn-view">
@@ -102,7 +102,7 @@ export default function Library({ games, routesByGame, totalRuns, userId, onOpen
               <GameSearchField
                 className="pn-input"
                 autoFocus
-                placeholder="Game name"
+                placeholder="Search Steam for a game"
                 value={name}
                 onChange={(v) => { setName(v); setSteamPick(null); }}
                 onPick={(r) => { setName(r.name); setSteamPick(r); }}
@@ -111,9 +111,12 @@ export default function Library({ games, routesByGame, totalRuns, userId, onOpen
                   if (e.key === "Escape") setAdding(false);
                 }}
               />
+              <div className="pn-hint" style={{ marginTop: 6 }}>
+                {steamPick ? `Matched "${steamPick.name}" on Steam.` : "Pick a match from the dropdown — only verified Steam games can be logged."}
+              </div>
               <div className="pn-btn-row" style={{ marginTop: 10 }}>
                 <button className="pn-btn pn-btn-ghost" onClick={() => setAdding(false)}>Cancel</button>
-                <button className="pn-btn pn-btn-primary" onClick={submitAdd}>Add</button>
+                <button className="pn-btn pn-btn-primary" disabled={!steamPick} onClick={submitAdd}>Add</button>
               </div>
             </div>
           ) : (

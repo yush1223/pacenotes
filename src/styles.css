@@ -157,10 +157,35 @@ button, input, textarea, select { font-family: inherit; }
 
 .pn-sidebar-footer { padding: 12px 8px 4px; border-top: 1px solid var(--hairline-soft); margin-top: 8px; }
 .pn-sidebar-footer-readout { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.04em; color: var(--ink-dimmer); line-height: 1.7; }
-.pn-sidebar-account { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--hairline-soft); }
-.pn-sidebar-account-email { font-size: 10px; color: var(--ink-dimmer); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.pn-sidebar-account { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--hairline-soft); }
+.pn-sidebar-account-main { min-width: 0; flex: 1; }
+.pn-sidebar-account-name {
+  display: block; background: none; border: none; padding: 0; text-align: left; cursor: pointer;
+  font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 600; color: var(--ink);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%;
+  border-bottom: 1px dashed transparent;
+}
+.pn-sidebar-account-name:hover { color: var(--brass); border-bottom-color: var(--brass-dim); }
+.pn-sidebar-view-profile {
+  display: block; background: none; border: none; padding: 0; margin-top: 3px; cursor: pointer;
+  font-family: 'JetBrains Mono', monospace; font-size: 9.5px; color: var(--ink-dimmer); text-decoration: underline;
+}
+.pn-sidebar-view-profile:hover { color: var(--brass); }
 .pn-sidebar-signout { flex-shrink: 0; background: none; border: none; color: var(--ink-dimmer); font-family: 'JetBrains Mono', monospace; font-size: 10px; cursor: pointer; padding: 2px; }
 .pn-sidebar-signout:hover { color: var(--bad); }
+.pn-sidebar-name-edit { display: flex; flex-direction: column; gap: 6px; width: 100%; }
+.pn-sidebar-name-edit input { font-family: 'JetBrains Mono', monospace; font-size: 11px; padding: 4px 6px; }
+.pn-sidebar-name-error { font-size: 9.5px; color: var(--bad); line-height: 1.4; }
+
+/* ---------- clickable author byline ---------- */
+.pn-author-link { background: none; border: none; padding: 0; cursor: pointer; color: var(--ink-dim); font: inherit; border-bottom: 1px dashed transparent; }
+.pn-author-link:hover { color: var(--brass); border-bottom-color: var(--brass-dim); }
+
+/* ---------- visual route card (profile / explore drill-in) ---------- */
+.pn-route-card { background: var(--panel); border: 1px solid var(--hairline); border-radius: 2px; overflow: hidden; cursor: pointer; transition: border-color var(--dur-base) var(--ease-out), transform var(--dur-base) var(--ease-out); }
+.pn-route-card:hover { border-color: var(--ink-dimmer); transform: translateY(-3px); }
+.pn-route-card-image { width: 100%; aspect-ratio: 460 / 160; background-size: cover; background-position: center; background-color: var(--panel-raised); }
+.pn-route-card-body { padding: 14px 16px 16px; }
 
 .pn-main {
   flex: 1;

@@ -8,14 +8,20 @@ import BackHead from "../components/BackHead";
 // A genuinely separate space from "my library": a visual, Steam-flavored
 // browse experience. Nothing here is yours until you open a route and it
 // gets added to your library.
-export default function Explore({ userId, onBack, onOpenRoute }) {
+export default function Explore({ userId, onBack, onOpenRoute, onOpenProfile }) {
   const [popular, setPopular] = useState(null);
   const [published, setPublished] = useState(null);
   const [selectedGame, setSelectedGame] = useState(null);
   const [routes, setRoutes] = useState(null);
 
   useEffect(() => {
-    fetchSteamPopular().then(setPopular);
+    // Steam's featured-categories response occasionally repeats an appid
+    // across sections (e.g. both top-sellers and new-releases) — dedupe so
+    // React keys stay unique and the grid doesn't show the same game twice.
+    fetchSteamPopular().then((items) => {
+      const seen = new Set();
+      setPopular((items || []).filter((p) => (seen.has(p.appid) ? false : (seen.add(p.appid), true))));
+    });
     db.listPublicGames().then(setPublished);
   }, []);
 
@@ -46,7 +52,19 @@ export default function Explore({ userId, onBack, onOpenRoute }) {
               <div className="pn-tile" key={r.id} onClick={() => onOpenRoute(r)}>
                 <div className="pn-tile-idx">{String(i + 1).padStart(2, "0")}</div>
                 <div className="pn-tile-title">{r.name}</div>
-                <div className="pn-hint" style={{ marginBottom: 10 }}>by {r.profiles?.username || "unknown"}</div>
+                <div className="pn-hint" style={{ marginBottom: 10 }}>
+                  by{" "}
+                  {r.profiles?.username && onOpenProfile ? (
+                    <button
+                      className="pn-author-link"
+                      onClick={(e) => { e.stopPropagation(); onOpenProfile({ userId: r.owner_id, username: r.profiles.username }); }}
+                    >
+                      {r.profiles.username}
+                    </button>
+                  ) : (
+                    r.profiles?.username || "unknown"
+                  )}
+                </div>
                 <div className="pn-instrument-row">
                   <div className="pn-instrument">
                     <span className="pn-instrument-label">segments</span>

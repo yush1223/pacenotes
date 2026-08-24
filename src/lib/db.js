@@ -2,20 +2,19 @@ import { supabase } from "./supabaseClient";
 
 // ---------- games (shared catalog) ----------
 
-// Find an existing game by steam_appid (preferred, dedupes cleanly) or by
-// exact name, else create one. Games are shared across everyone — nobody
-// owns a game row, so there's no delete-game here on purpose.
+// Find an existing game by steam_appid, else create one. A steamAppid is
+// required — games are only ever created from a picked Steam search
+// result, never freeform text, so nothing unverifiable ever lands in the
+// shared catalog (and therefore can never be published). Games are shared
+// across everyone — nobody owns a game row, so there's no delete-game here
+// on purpose.
 export async function findOrCreateGame({ name, steamAppid, headerImage }) {
-  if (steamAppid != null) {
-    const { data: existing } = await supabase.from("games").select("*").eq("steam_appid", steamAppid).maybeSingle();
-    if (existing) return existing;
-  } else {
-    const { data: existing } = await supabase.from("games").select("*").eq("name", name).maybeSingle();
-    if (existing) return existing;
-  }
+  if (steamAppid == null) throw new Error("Pick a game from the Steam search results — typed names alone can't be added.");
+  const { data: existing } = await supabase.from("games").select("*").eq("steam_appid", steamAppid).maybeSingle();
+  if (existing) return existing;
   const { data, error } = await supabase
     .from("games")
-    .insert({ name, steam_appid: steamAppid ?? null, header_image: headerImage ?? null })
+    .insert({ name, steam_appid: steamAppid, header_image: headerImage ?? null })
     .select()
     .single();
   if (error) throw error;
@@ -110,7 +109,17 @@ export async function saveRoute(route, userId) {
   return data;
 }
 
+// Publishing is restricted to routes whose game is a verified Steam title
+// (games.steam_appid set) — this is enforced at creation time too (games
+// can only be created from a picked Steam search result), but this is the
+// hard backstop so nothing unverifiable can ever go public even via an
+// older/orphaned game row.
 export async function setRouteVisibility(routeId, visibility) {
+  if (visibility === "public") {
+    const { data: route, error: rErr } = await supabase.from("routes").select("game_id, games(steam_appid)").eq("id", routeId).single();
+    if (rErr) throw rErr;
+    if (!route.games?.steam_appid) throw new Error("Only routes for verified Steam games can be published.");
+  }
   const { error } = await supabase.from("routes").update({ visibility }).eq("id", routeId);
   if (error) throw error;
 }
@@ -202,7 +211,7 @@ export async function listPublicRoutes({ gameId } = {}) {
 export async function listPublicGames() {
   const { data, error } = await supabase
     .from("routes")
-    .select("game_id, games(id,name,header_image)")
+    .select("game_id, games(id,name,header_image,steam_appid)")
     .eq("visibility", "public");
   if (error) throw error;
   const byId = {};
@@ -231,6 +240,42 @@ export async function listPublicRoutesBySteamAppid(steamAppid) {
     .select("*, games!inner(id,name,header_image,steam_appid), profiles!owner_id(username)")
     .eq("games.steam_appid", steamAppid)
     .eq("visibility", "public")
+    .order("updated_at", { ascending: false });
+  if (error) throw error;
+  return data || [];
+}
+
+// ---------- profiles (usernames, public author pages) ----------
+
+export async function getProfile(userId) {
+  const { data, error } = await supabase.from("profiles").select("id, username, created_at").eq("id", userId).single();
+  if (error) throw error;
+  return data;
+}
+
+const USERNAME_RE = /^[a-zA-Z0-9_]{3,20}$/;
+
+export async function updateUsername(userId, username) {
+  const trimmed = username.trim();
+  if (!USERNAME_RE.test(trimmed)) {
+    throw new Error("Usernames are 3-20 characters: letters, numbers, underscores only.");
+  }
+  const { data, error } = await supabase.from("profiles").update({ username: trimmed }).eq("id", userId).select().single();
+  if (error) {
+    if (error.code === "23505") throw new Error(`"${trimmed}" is already taken.`);
+    throw error;
+  }
+  return data;
+}
+
+// Every public route a given user owns, with game info for visuals — the
+// data behind a clickable author's public profile page.
+export async function listPublicRoutesByUser(userId) {
+  const { data, error } = await supabase
+    .from("routes")
+    .select("*, games(id,name,header_image,steam_appid)")
+    .eq("visibility", "public")
+    .eq("owner_id", userId)
     .order("updated_at", { ascending: false });
   if (error) throw error;
   return data || [];

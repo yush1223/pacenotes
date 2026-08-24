@@ -39,6 +39,8 @@ export default function RouteDetail({ routeId, userId, onBack, onEdit, onDelete,
       setRoute((r) => ({ ...r, visibility: "public" }));
       onVisibilityChange?.();
       flash?.(`Published — "${route.name}" is now visible in Explore`);
+    } catch (e) {
+      flash?.(e.message || "Couldn't publish that route.");
     } finally {
       setPublishBusy(false);
     }

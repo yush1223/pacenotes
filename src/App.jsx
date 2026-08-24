@@ -10,6 +10,7 @@ import RouteDetail from "./screens/RouteDetail";
 import RunScreen from "./screens/RunScreen";
 import HistoryScreen from "./screens/HistoryScreen";
 import Explore from "./screens/Explore";
+import UserProfile from "./screens/UserProfile";
 
 // ---------- root ----------
 export default function App() {
@@ -25,6 +26,8 @@ export default function App() {
   const [editingRoute, setEditingRoute] = useState(null);
   const [editorReturn, setEditorReturn] = useState("game");
   const [toast, setToast] = useState(null);
+  const [profile, setProfile] = useState(null);
+  const [profileTarget, setProfileTarget] = useState(null);
 
   const userId = session?.user?.id;
 
@@ -50,10 +53,27 @@ export default function App() {
   useEffect(() => {
     if (!userId) return;
     (async () => {
-      await reloadLibrary();
+      await Promise.all([reloadLibrary(), db.getProfile(userId).then(setProfile)]);
       setLoading(false);
     })();
   }, [userId, reloadLibrary]);
+
+  const updateUsername = async (newName) => {
+    const p = await db.updateUsername(userId, newName);
+    setProfile(p);
+    flash("Username updated");
+    return p;
+  };
+
+  // Opening a public guide (from Explore or a user's profile) adds it to
+  // your library and jumps straight to it — nothing "yours" until you do.
+  const openPublicRoute = async (route) => {
+    await db.addToLibrary(route.id, userId);
+    await reloadLibrary();
+    setRouteId(route.id);
+    setScreen("route");
+    flash(`Added "${route.name}" to your library`);
+  };
 
   const addGame = async (name, steamInfo) => {
     const game = await db.findOrCreateGame({ name, steamAppid: steamInfo?.appid, headerImage: steamInfo?.image });
@@ -101,15 +121,17 @@ export default function App() {
 
   const sidebarProps = {
     games,
-    activeGameId: screen === "library" || screen === "explore" ? null : gameId,
-    activeSection: screen === "explore" ? "explore" : "library",
+    activeGameId: screen === "library" || screen === "explore" || screen === "profile" ? null : gameId,
+    activeSection: screen === "explore" || screen === "profile" ? "explore" : "library",
     totalRuns,
     onHome: () => setScreen("library"),
     onExplore: () => setScreen("explore"),
     onSelectGame: (id) => { setGameId(id); setScreen("game"); },
     onAddGame: async (name, steamInfo) => { const id = await addGame(name, steamInfo); setGameId(id); setScreen("game"); },
     onDeleteGame: deleteGame,
-    userEmail: session?.user?.email,
+    username: profile?.username,
+    onUpdateUsername: updateUsername,
+    onViewProfile: () => { setProfileTarget({ userId, username: profile?.username }); setScreen("profile"); },
     onSignOut: signOut,
   };
 
@@ -133,7 +155,7 @@ export default function App() {
     );
   }
 
-  const wide = screen === "run" || screen === "route" || screen === "game" || screen === "library" || screen === "explore";
+  const wide = screen === "run" || screen === "route" || screen === "game" || screen === "library" || screen === "explore" || screen === "profile";
 
   return (
     <Shell toast={toast} sidebarProps={sidebarProps} wide={wide}>
@@ -153,13 +175,16 @@ export default function App() {
         <Explore
           userId={userId}
           onBack={() => setScreen("library")}
-          onOpenRoute={async (route) => {
-            await db.addToLibrary(route.id, userId);
-            await reloadLibrary();
-            setRouteId(route.id);
-            setScreen("route");
-            flash(`Added "${route.name}" to your library`);
-          }}
+          onOpenRoute={openPublicRoute}
+          onOpenProfile={(target) => { setProfileTarget(target); setScreen("profile"); }}
+        />
+      )}
+      {screen === "profile" && profileTarget && (
+        <UserProfile
+          userId={profileTarget.userId}
+          username={profileTarget.username}
+          onBack={() => setScreen("explore")}
+          onOpenRoute={openPublicRoute}
         />
       )}
       {screen === "game" && (

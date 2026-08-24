@@ -6,14 +6,32 @@ import GameSearchField from "./GameSearchField";
 // Library and Explore are deliberately two real tabs, not one nav item
 // buried in a list next to the other — different content, different
 // purpose (yours vs. everyone's).
-export default function Sidebar({ games, activeGameId, activeSection, totalRuns, onHome, onExplore, onSelectGame, onAddGame, onDeleteGame, userEmail, onSignOut }) {
+export default function Sidebar({ games, activeGameId, activeSection, totalRuns, onHome, onExplore, onSelectGame, onAddGame, onDeleteGame, username, onUpdateUsername, onViewProfile, onSignOut }) {
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState("");
   const [steamPick, setSteamPick] = useState(null);
+  const [editingName, setEditingName] = useState(false);
+  const [nameDraft, setNameDraft] = useState("");
+  const [nameError, setNameError] = useState("");
+  const [nameBusy, setNameBusy] = useState(false);
   const confirm = useConfirm();
 
+  const startEditName = () => { setNameDraft(username || ""); setNameError(""); setEditingName(true); };
+  const saveName = async () => {
+    setNameBusy(true);
+    setNameError("");
+    try {
+      await onUpdateUsername(nameDraft);
+      setEditingName(false);
+    } catch (e) {
+      setNameError(e.message || "Couldn't save that username.");
+    } finally {
+      setNameBusy(false);
+    }
+  };
+
   const submit = () => {
-    if (name.trim()) { onAddGame(name.trim(), steamPick); setName(""); setSteamPick(null); setAdding(false); }
+    if (steamPick) { onAddGame(steamPick.name, steamPick); setName(""); setSteamPick(null); setAdding(false); }
   };
 
   return (
@@ -60,7 +78,7 @@ export default function Sidebar({ games, activeGameId, activeSection, totalRuns,
                 className="pn-input"
                 inputStyle={{ fontSize: 12.5 }}
                 autoFocus
-                placeholder="Game name"
+                placeholder="Search Steam for a game"
                 value={name}
                 onChange={(v) => { setName(v); setSteamPick(null); }}
                 onPick={(r) => { setName(r.name); setSteamPick(r); }}
@@ -69,9 +87,10 @@ export default function Sidebar({ games, activeGameId, activeSection, totalRuns,
                   if (e.key === "Escape") setAdding(false);
                 }}
               />
+              {!steamPick && <div className="pn-hint" style={{ fontSize: 10.5 }}>Pick a match from the dropdown.</div>}
               <div className="pn-btn-row">
                 <button className="pn-btn pn-btn-ghost" style={{ padding: "6px 8px", fontSize: 11 }} onClick={() => setAdding(false)}>Cancel</button>
-                <button className="pn-btn pn-btn-primary" style={{ padding: "6px 8px", fontSize: 11 }} onClick={submit}>Add</button>
+                <button className="pn-btn pn-btn-primary" style={{ padding: "6px 8px", fontSize: 11 }} disabled={!steamPick} onClick={submit}>Add</button>
               </div>
             </div>
           ) : (
@@ -87,10 +106,30 @@ export default function Sidebar({ games, activeGameId, activeSection, totalRuns,
           {String(games.length).padStart(2, "0")} games logged<br />
           {String(totalRuns).padStart(3, "0")} runs recorded
         </div>
-        {userEmail && (
+        {username && (
           <div className="pn-sidebar-account">
-            <span className="pn-sidebar-account-email" title={userEmail}>{userEmail}</span>
-            <button className="pn-sidebar-signout" onClick={onSignOut}>sign out</button>
+            {editingName ? (
+              <div className="pn-sidebar-name-edit">
+                <input
+                  className="pn-input"
+                  value={nameDraft}
+                  autoFocus
+                  onChange={(e) => setNameDraft(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") saveName(); if (e.key === "Escape") setEditingName(false); }}
+                />
+                {nameError && <div className="pn-sidebar-name-error">{nameError}</div>}
+                <div className="pn-btn-row">
+                  <button className="pn-btn pn-btn-ghost" style={{ padding: "4px 8px", fontSize: 10.5 }} onClick={() => setEditingName(false)}>Cancel</button>
+                  <button className="pn-btn pn-btn-primary" style={{ padding: "4px 8px", fontSize: 10.5 }} disabled={nameBusy} onClick={saveName}>Save</button>
+                </div>
+              </div>
+            ) : (
+              <div className="pn-sidebar-account-main">
+                <button className="pn-sidebar-account-name" onClick={startEditName} title="Click to rename">{username}</button>
+                {onViewProfile && <button className="pn-sidebar-view-profile" onClick={onViewProfile}>view public profile</button>}
+              </div>
+            )}
+            {!editingName && <button className="pn-sidebar-signout" onClick={onSignOut}>sign out</button>}
           </div>
         )}
       </div>
