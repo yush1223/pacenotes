@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { getKey } from "../lib/storage";
-import { fmt, toDurations, computeBPT } from "../lib/time";
+import { fmt, toDurations } from "../lib/time";
 import BackHead from "../components/BackHead";
 
 // ---------- route detail (roadbook) ----------
@@ -9,7 +9,6 @@ export default function RouteDetail({ routeId, onBack, onEdit, onDelete, onStart
   useEffect(() => { (async () => setRoute(await getKey(`pn_route_${routeId}`, null)))(); }, [routeId]);
   if (!route) return <div className="pn-view">Loading…</div>;
 
-  const bpt = computeBPT(route.gold);
   const pbDurations = route.pb ? toDurations(route.pb.segments) : null;
 
   return (
@@ -26,10 +25,6 @@ export default function RouteDetail({ routeId, onBack, onEdit, onDelete, onStart
             <div className="pn-gauge" style={{ alignItems: "flex-start" }}>
               <span className="pn-gauge-label">personal best</span>
               <span className="pn-mono pn-gauge-value pn-brass-text">{route.pb ? fmt(route.pb.total, false) : "—"}</span>
-            </div>
-            <div className="pn-gauge" style={{ alignItems: "flex-start" }}>
-              <span className="pn-gauge-label">best possible</span>
-              <span className="pn-mono pn-gauge-value">{bpt != null ? fmt(bpt, false) : "—"}</span>
             </div>
           </div>
 
@@ -62,8 +57,7 @@ export default function RouteDetail({ routeId, onBack, onEdit, onDelete, onStart
                     <div className="pn-roadbook-title">{s.title}</div>
                     <div className="pn-roadbook-times">
                       {route.targets && route.targets[i] != null && <span className="pn-bracket">target {fmt(route.targets[i], false)}</span>}
-                      {route.gold && route.gold[i] != null && <span className="pn-bracket pn-brass-text">gold {fmt(route.gold[i], false)}</span>}
-                      {pbDurations && <span className="pn-bracket">pb {fmt(pbDurations[i], false)}</span>}
+                      {pbDurations && <span className="pn-bracket pn-brass-text">pb {fmt(pbDurations[i], false)}</span>}
                     </div>
                   </div>
                   {s.notes && (

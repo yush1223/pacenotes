@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { getKey } from "../lib/storage";
-import { fmt, computeBPT } from "../lib/time";
+import { fmt } from "../lib/time";
 import Sparkline from "../components/Sparkline";
 import BackHead from "../components/BackHead";
 
@@ -29,7 +29,6 @@ export default function GameDetail({ game, routes, onBack, onOpenRoute, onNewRou
       <div className="pn-tile-grid pn-stagger">
         {routes.map((r, i) => {
           const d = details[r.id];
-          const bpt = d?.full ? computeBPT(d.full.gold) : null;
           const sparkVals = d?.runs?.length ? d.runs.slice(0, 8).reverse().map((x) => x.total) : null;
           return (
             <div className="pn-tile" key={r.id} onClick={() => onOpenRoute(r.id)}>
@@ -40,11 +39,6 @@ export default function GameDetail({ game, routes, onBack, onOpenRoute, onNewRou
                   <div className="pn-instrument">
                     <span className="pn-instrument-label">pb</span>
                     <span className="pn-mono pn-brass-text">{d?.full?.pb ? fmt(d.full.pb.total, false) : "—"}</span>
-                  </div>
-                  <div className="pn-instrument-divider" />
-                  <div className="pn-instrument">
-                    <span className="pn-instrument-label">bpt</span>
-                    <span className="pn-mono">{bpt != null ? fmt(bpt, false) : "—"}</span>
                   </div>
                   <div className="pn-instrument-divider" />
                   <div className="pn-instrument">

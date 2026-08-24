@@ -46,20 +46,3 @@ export function relTime(ts) {
 export function toDurations(cum) {
   return cum.map((c, i) => (i === 0 ? c : c - cum[i - 1]));
 }
-
-// Inverse of toDurations: per-segment durations -> cumulative split time at
-// each segment boundary. Once a duration is missing, every split from that
-// point on is unknown (null) rather than silently skipping the gap.
-export function toCumulative(durations) {
-  let sum = 0;
-  return (durations || []).map((d) => {
-    if (d == null || sum == null) { sum = null; return null; }
-    sum += d;
-    return sum;
-  });
-}
-
-export function computeBPT(gold) {
-  if (!gold || gold.length === 0 || gold.some((g) => g == null)) return null;
-  return gold.reduce((a, b) => a + b, 0);
-}

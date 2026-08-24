@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { uid } from "../lib/storage";
 import { fmt, parseTargetInput } from "../lib/time";
 import BackHead from "../components/BackHead";
@@ -11,14 +11,13 @@ export default function RouteEditor({ gameId, initial, onCancel, onSave }) {
     initial?.segments?.length
       ? initial.segments.map((s, i) => ({
           ...s,
-          goldStr: initial.gold?.[i] != null ? fmt(initial.gold[i], false) : "",
           targetStr: initial.targets?.[i] != null ? fmt(initial.targets[i], false) : "",
         }))
-      : [{ id: uid(), title: "", notes: "", goldStr: "", targetStr: "" }]
+      : [{ id: uid(), title: "", notes: "", targetStr: "" }]
   );
 
   const updateSeg = (idx, field, val) => setSegments((segs) => segs.map((s, i) => (i === idx ? { ...s, [field]: val } : s)));
-  const addSeg = () => setSegments((segs) => [...segs, { id: uid(), title: "", notes: "", goldStr: "", targetStr: "" }]);
+  const addSeg = () => setSegments((segs) => [...segs, { id: uid(), title: "", notes: "", targetStr: "" }]);
   const removeSeg = (idx) => setSegments((segs) => segs.filter((_, i) => i !== idx));
   const moveSeg = (idx, dir) => setSegments((segs) => {
     const next = [...segs];
@@ -30,12 +29,6 @@ export default function RouteEditor({ gameId, initial, onCancel, onSave }) {
 
   const canSave = name.trim() && segments.some((s) => s.title.trim());
 
-  const segTargetSum = useMemo(() => {
-    const parsed = segments.filter((s) => s.title.trim()).map((s) => parseTargetInput(s.targetStr));
-    if (parsed.length === 0 || parsed.some((t) => t == null)) return null;
-    return parsed.reduce((a, b) => a + b, 0);
-  }, [segments]);
-
   const handleSave = () => {
     const kept = segments.filter((s) => s.title.trim());
     const cleanSegs = kept.map((s) => ({ id: s.id, title: s.title.trim(), notes: s.notes || "" }));
@@ -46,7 +39,6 @@ export default function RouteEditor({ gameId, initial, onCancel, onSave }) {
       target: parseTargetInput(targetStr),
       segments: cleanSegs,
       pb: initial?.pb || null,
-      gold: kept.map((s) => parseTargetInput(s.goldStr)),
       targets: kept.map((s) => parseTargetInput(s.targetStr)),
     });
   };
@@ -58,11 +50,10 @@ export default function RouteEditor({ gameId, initial, onCancel, onSave }) {
       <input className="pn-input" placeholder="e.g. Any% — no major glitches" value={name} onChange={(e) => setName(e.target.value)} />
       <label className="pn-label">Total target (optional)</label>
       <input className="pn-input pn-input-mono" placeholder="mm:ss or h:mm:ss — e.g. current WR" value={targetStr} onChange={(e) => setTargetStr(e.target.value)} />
-      {segTargetSum != null && (
-        <div className="pn-hint">sum of segment targets below: <span className="pn-mono">{fmt(segTargetSum, false)}</span></div>
-      )}
       <label className="pn-label" style={{ marginTop: 18 }}>Segments</label>
-      <div className="pn-hint" style={{ marginBottom: 10 }}>Each segment can carry its own target split, used to pace you live during a run — not just the total.</div>
+      <div className="pn-hint" style={{ marginBottom: 10 }}>
+        A per-segment target is optional — once you have a PB, that becomes the thing to chase automatically. Set a target for segments you don't have a PB pace for yet.
+      </div>
 
       <div className="pn-seg-editor-list pn-stagger">
         {segments.map((s, i) => (
@@ -72,18 +63,11 @@ export default function RouteEditor({ gameId, initial, onCancel, onSave }) {
               <div className="pn-seg-editor-toprow">
                 <input className="pn-input" placeholder="Segment title" value={s.title} onChange={(e) => updateSeg(i, "title", e.target.value)} />
                 <input
-                  className="pn-input pn-input-mono pn-seg-editor-gold"
+                  className="pn-input pn-input-mono pn-seg-editor-target"
                   placeholder="target"
-                  title="Target split time for this segment (mm:ss)"
+                  title="Optional target split time for this segment (mm:ss)"
                   value={s.targetStr}
                   onChange={(e) => updateSeg(i, "targetStr", e.target.value)}
-                />
-                <input
-                  className="pn-input pn-input-mono pn-seg-editor-gold"
-                  placeholder="gold"
-                  title="Gold split time for this segment (mm:ss)"
-                  value={s.goldStr}
-                  onChange={(e) => updateSeg(i, "goldStr", e.target.value)}
                 />
               </div>
               <textarea className="pn-textarea" placeholder={"One step per line…"} rows={3} value={s.notes} onChange={(e) => updateSeg(i, "notes", e.target.value)} />
