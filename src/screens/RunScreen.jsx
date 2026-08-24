@@ -14,6 +14,7 @@ export default function RunScreen({ routeId, onExit, onFinished }) {
   const [segIdx, setSegIdx] = useState(0);
   const [splits, setSplits] = useState([]);
   const [finished, setFinished] = useState(false);
+  const [useTarget, setUseTarget] = useState(true);
   const startRef = useRef(null);
   const rafRef = useRef(null);
 
@@ -82,15 +83,26 @@ export default function RunScreen({ routeId, onExit, onFinished }) {
 
   // What to aim for on each segment: PB's own time for that segment once
   // one exists (it's the thing the graph is already racing against), else
-  // the optional manual target — so target quietly stops mattering once a
-  // PB exists, exactly as optional as it should be.
+  // the optional manual target — unless the whole-run target toggle is
+  // off, in which case target never counts, even as a fallback. Each aim
+  // tracks its own source so the UI can label it (and give PB the brass
+  // treatment every other "record" gets in this app).
   const pbDurations = route.pb ? toDurations(route.pb.segments) : null;
   const aims = route.segments.map((_, i) => {
-    if (pbDurations && pbDurations[i] != null) return pbDurations[i];
-    if (route.targets && route.targets[i] != null) return route.targets[i];
+    if (pbDurations && pbDurations[i] != null) return { value: pbDurations[i], isPb: true };
+    if (useTarget && route.targets && route.targets[i] != null) return { value: route.targets[i], isPb: false };
     return null;
   });
   const actualDurations = toDurations(splits);
+
+  // Live in-segment pace: how long you've spent on the CURRENT segment so
+  // far, against what it took last time (or the target) — updates every
+  // frame, not just at split points, so it actually answers "am I on
+  // pace right now" rather than reporting stale info from the last split.
+  const segStartElapsed = segIdx === 0 ? 0 : (splits[segIdx - 1] ?? 0);
+  const elapsedInSeg = Math.max(0, elapsed - segStartElapsed);
+  const currentAim = aims[segIdx];
+  const liveSegDelta = currentAim != null && elapsed > 0 ? elapsedInSeg - currentAim.value : null;
 
   return (
     <div className="pn-view">
@@ -102,7 +114,19 @@ export default function RunScreen({ routeId, onExit, onFinished }) {
 
       <div className="pn-clockbox">
         <FlapClock text={fmt(elapsed)} />
-        {route.target != null && <div className="pn-clock-vs">total target {fmt(route.target, false)}</div>}
+        {currentAim != null ? (
+          <div className="pn-clock-vs">
+            this split {fmt(elapsedInSeg, false)} / <span className={currentAim.isPb ? "pn-brass-text" : ""}>{currentAim.isPb ? "pb" : "target"} {fmt(currentAim.value, false)}</span>
+            {liveSegDelta != null && <span className={liveSegDelta > 0 ? "pn-bad" : "pn-good"}> ({fmtDelta(liveSegDelta)})</span>}
+          </div>
+        ) : (
+          <div className="pn-clock-vs pn-ink-dim">no pb or target set for this segment yet</div>
+        )}
+        {route.targets && route.targets.some((t) => t != null) && (
+          <button className="pn-target-toggle" onClick={() => setUseTarget((v) => !v)}>
+            target {useTarget ? "on" : "off"}
+          </button>
+        )}
       </div>
 
       {!finished ? (

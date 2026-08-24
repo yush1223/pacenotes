@@ -377,6 +377,12 @@ button, input, textarea, select { font-family: inherit; }
 .pn-flap-face-back { transform: rotateX(180deg); }
 
 .pn-clock-vs { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--ink-dim); margin-top: 10px; }
+.pn-target-toggle {
+  display: inline-block; margin-top: 10px; background: none; border: 1px solid var(--hairline); border-radius: 2px;
+  color: var(--ink-dim); font-family: 'JetBrains Mono', monospace; font-size: 10.5px; letter-spacing: 0.04em;
+  padding: 4px 10px; cursor: pointer; transition: border-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+}
+.pn-target-toggle:hover { color: var(--ink); border-color: var(--ink-dimmer); }
 
 /* ---------- pace note roller ---------- */
 .pn-roller { margin: 18px 0 4px; }
