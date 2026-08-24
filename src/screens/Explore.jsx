@@ -8,7 +8,7 @@ import BackHead from "../components/BackHead";
 // A genuinely separate space from "my library": a visual, Steam-flavored
 // browse experience. Nothing here is yours until you open a route and it
 // gets added to your library.
-export default function Explore({ userId, onBack, onOpenRoute, onOpenProfile }) {
+export default function Explore({ userId, onBack, onPreviewRoute, onOpenProfile }) {
   const [popular, setPopular] = useState(null);
   const [published, setPublished] = useState(null);
   const [selectedGame, setSelectedGame] = useState(null);
@@ -49,7 +49,7 @@ export default function Explore({ userId, onBack, onOpenRoute, onOpenProfile }) 
         ) : (
           <div className="pn-tile-grid pn-stagger">
             {routes.map((r, i) => (
-              <div className="pn-tile" key={r.id} onClick={() => onOpenRoute(r)}>
+              <div className="pn-tile" key={r.id} onClick={() => onPreviewRoute(r)}>
                 <div className="pn-tile-idx">{String(i + 1).padStart(2, "0")}</div>
                 <div className="pn-tile-title">{r.name}</div>
                 <div className="pn-hint" style={{ marginBottom: 10 }}>
@@ -64,6 +64,7 @@ export default function Explore({ userId, onBack, onOpenRoute, onOpenProfile }) 
                   ) : (
                     r.profiles?.username || "unknown"
                   )}
+                  {r.remixed_from_name && ` · remix`}
                 </div>
                 <div className="pn-instrument-row">
                   <div className="pn-instrument">

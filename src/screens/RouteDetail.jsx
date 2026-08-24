@@ -5,7 +5,7 @@ import BackHead from "../components/BackHead";
 import { useConfirm } from "../components/ConfirmProvider";
 
 // ---------- route detail (roadbook) ----------
-export default function RouteDetail({ routeId, userId, onBack, onEdit, onDelete, onStartRun, onHistory, onVisibilityChange, flash }) {
+export default function RouteDetail({ routeId, userId, onBack, onEdit, onRemix, onDelete, onStartRun, onHistory, onVisibilityChange, onOpenProfile, flash }) {
   const [route, setRoute] = useState(null);
   const [pb, setPb] = useState(null);
   const [publishBusy, setPublishBusy] = useState(false);
@@ -66,6 +66,26 @@ export default function RouteDetail({ routeId, userId, onBack, onEdit, onDelete,
   return (
     <div className="pn-view">
       <BackHead onBack={onBack} eyebrow="Route" title={route.name} />
+      {route.remixed_from_name && (
+        <div className="pn-hint pn-remix-credit" style={{ marginTop: -10, marginBottom: 16 }}>
+          ↻ Remixed from "{route.remixed_from_name}"
+          {route.remix_owner?.username && onOpenProfile ? (
+            <>
+              {" "}by{" "}
+              <button
+                className="pn-author-link"
+                onClick={() => onOpenProfile({ userId: route.remixed_from_owner_id, username: route.remix_owner.username })}
+              >
+                {route.remix_owner.username}
+              </button>
+            </>
+          ) : route.remix_owner?.username ? (
+            ` by ${route.remix_owner.username}`
+          ) : (
+            " by a deleted account"
+          )}
+        </div>
+      )}
 
       <div className="pn-split-cols">
         <div className="pn-split-col-sticky">
@@ -84,7 +104,19 @@ export default function RouteDetail({ routeId, userId, onBack, onEdit, onDelete,
 
           <button className="pn-btn pn-btn-primary pn-btn-full" style={{ marginTop: 14 }} onClick={onStartRun}>▶ Start run</button>
           <div className="pn-btn-row" style={{ marginTop: 8 }}>
-            {isOwner && <button className="pn-btn pn-btn-ghost" onClick={() => onEdit(route)}>Edit</button>}
+            {isOwner ? (
+              <button className="pn-btn pn-btn-ghost" onClick={() => onEdit(route)}>Edit</button>
+            ) : (
+              onRemix && (
+                <button
+                  className="pn-btn pn-btn-ghost"
+                  onClick={() => onRemix(route)}
+                  title="Make your own editable copy — credit to the original stays attached"
+                >
+                  Remix
+                </button>
+              )
+            )}
             <button className="pn-btn pn-btn-ghost" onClick={onHistory}>History</button>
           </div>
 
@@ -100,20 +132,29 @@ export default function RouteDetail({ routeId, userId, onBack, onEdit, onDelete,
           {isOwner && (
             <>
               <div className="pn-publish-box">
-                <div className="pn-publish-status">
-                  <span className={"pn-publish-dot" + (route.visibility === "public" ? " pn-publish-dot-live" : "")} />
-                  <span className={route.visibility === "public" ? "pn-brass-text" : "pn-publish-status-text"}>
-                    {route.visibility === "public" ? "Published — live in Explore" : "Private — only you"}
-                  </span>
-                </div>
-                {route.visibility === "public" ? (
-                  <button className="pn-btn pn-btn-ghost pn-btn-full" style={{ marginTop: 8 }} disabled={publishBusy} onClick={unpublish}>
-                    Unpublish
-                  </button>
+                {route.games?.steam_appid ? (
+                  <>
+                    <div className="pn-publish-status">
+                      <span className={"pn-publish-dot" + (route.visibility === "public" ? " pn-publish-dot-live" : "")} />
+                      <span className={route.visibility === "public" ? "pn-brass-text" : "pn-publish-status-text"}>
+                        {route.visibility === "public" ? "Published — live in Explore" : "Private — only you"}
+                      </span>
+                    </div>
+                    {route.visibility === "public" ? (
+                      <button className="pn-btn pn-btn-ghost pn-btn-full" style={{ marginTop: 8 }} disabled={publishBusy} onClick={unpublish}>
+                        Unpublish
+                      </button>
+                    ) : (
+                      <button className="pn-btn pn-btn-primary pn-btn-full" style={{ marginTop: 8 }} disabled={publishBusy} onClick={publish}>
+                        Publish to Explore
+                      </button>
+                    )}
+                  </>
                 ) : (
-                  <button className="pn-btn pn-btn-primary pn-btn-full" style={{ marginTop: 8 }} disabled={publishBusy} onClick={publish}>
-                    Publish to Explore
-                  </button>
+                  <div className="pn-publish-status">
+                    <span className="pn-publish-dot" />
+                    <span className="pn-publish-status-text">Custom game — can't be published to Explore</span>
+                  </div>
                 )}
               </div>
 

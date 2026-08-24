@@ -6,7 +6,7 @@ import BackHead from "../components/BackHead";
 // ---------- public author profile ----------
 // Everything a given user has published, visually — reached by clicking
 // their username anywhere it appears (Explore bylines, your own sidebar).
-export default function UserProfile({ userId, username, onBack, onOpenRoute }) {
+export default function UserProfile({ userId, username, onBack, onPreviewRoute }) {
   const [routes, setRoutes] = useState(null);
 
   useEffect(() => {
@@ -32,7 +32,7 @@ export default function UserProfile({ userId, username, onBack, onOpenRoute }) {
           </div>
           <div className="pn-explore-grid pn-stagger">
             {routes.map((r) => (
-              <div className="pn-route-card" key={r.id} onClick={() => onOpenRoute(r)}>
+              <div className="pn-route-card" key={r.id} onClick={() => onPreviewRoute(r)}>
                 {r.games?.header_image ? (
                   <div className="pn-route-card-image" style={{ backgroundImage: `url(${r.games.header_image})` }} />
                 ) : (
@@ -40,7 +40,10 @@ export default function UserProfile({ userId, username, onBack, onOpenRoute }) {
                 )}
                 <div className="pn-route-card-body">
                   <div className="pn-explore-tile-name">{r.name}</div>
-                  <div className="pn-hint" style={{ margin: "2px 0 10px" }}>{r.games?.name}</div>
+                  <div className="pn-hint" style={{ margin: "2px 0 10px" }}>
+                    {r.games?.name}
+                    {r.remixed_from_name && ` · remix of "${r.remixed_from_name}"`}
+                  </div>
                   <div className="pn-instrument-row">
                     <div className="pn-instrument">
                       <span className="pn-instrument-label">segments</span>

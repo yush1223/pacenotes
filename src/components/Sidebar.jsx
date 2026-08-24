@@ -8,6 +8,7 @@ import GameSearchField from "./GameSearchField";
 // purpose (yours vs. everyone's).
 export default function Sidebar({ games, activeGameId, activeSection, totalRuns, onHome, onExplore, onSelectGame, onAddGame, onDeleteGame, username, onUpdateUsername, onViewProfile, onSignOut }) {
   const [adding, setAdding] = useState(false);
+  const [customMode, setCustomMode] = useState(false);
   const [name, setName] = useState("");
   const [steamPick, setSteamPick] = useState(null);
   const [editingName, setEditingName] = useState(false);
@@ -30,8 +31,15 @@ export default function Sidebar({ games, activeGameId, activeSection, totalRuns,
     }
   };
 
+  const resetAddForm = () => { setAdding(false); setCustomMode(false); setName(""); setSteamPick(null); };
+
   const submit = () => {
-    if (steamPick) { onAddGame(steamPick.name, steamPick); setName(""); setSteamPick(null); setAdding(false); }
+    if (customMode) {
+      if (name.trim()) { onAddGame(name.trim(), { custom: true }); resetAddForm(); }
+    } else if (steamPick) {
+      onAddGame(steamPick.name, steamPick);
+      resetAddForm();
+    }
   };
 
   return (
@@ -74,23 +82,40 @@ export default function Sidebar({ games, activeGameId, activeSection, totalRuns,
           </div>
           {adding ? (
             <div className="pn-inline-form" style={{ flexDirection: "column", gap: 6 }}>
-              <GameSearchField
-                className="pn-input"
-                inputStyle={{ fontSize: 12.5 }}
-                autoFocus
-                placeholder="Search Steam for a game"
-                value={name}
-                onChange={(v) => { setName(v); setSteamPick(null); }}
-                onPick={(r) => { setName(r.name); setSteamPick(r); }}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") submit();
-                  if (e.key === "Escape") setAdding(false);
-                }}
-              />
-              {!steamPick && <div className="pn-hint" style={{ fontSize: 10.5 }}>Pick a match from the dropdown.</div>}
+              {customMode ? (
+                <input
+                  className="pn-input"
+                  style={{ fontSize: 12.5 }}
+                  autoFocus
+                  placeholder="Game name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") submit(); if (e.key === "Escape") resetAddForm(); }}
+                />
+              ) : (
+                <GameSearchField
+                  className="pn-input"
+                  inputStyle={{ fontSize: 12.5 }}
+                  autoFocus
+                  placeholder="Search Steam for a game"
+                  value={name}
+                  onChange={(v) => { setName(v); setSteamPick(null); }}
+                  onPick={(r) => { setName(r.name); setSteamPick(r); }}
+                  onKeyDown={(e) => { if (e.key === "Enter") submit(); if (e.key === "Escape") resetAddForm(); }}
+                />
+              )}
+              <div className="pn-hint" style={{ fontSize: 10.5 }}>
+                {customMode ? (
+                  <>Custom — can't be published. <button className="pn-author-link" onClick={() => { setCustomMode(false); setName(""); }}>Search Steam instead</button></>
+                ) : steamPick ? (
+                  `Matched "${steamPick.name}".`
+                ) : (
+                  <>Pick a match. <button className="pn-author-link" onClick={() => { setCustomMode(true); setName(""); setSteamPick(null); }}>Add custom game</button></>
+                )}
+              </div>
               <div className="pn-btn-row">
-                <button className="pn-btn pn-btn-ghost" style={{ padding: "6px 8px", fontSize: 11 }} onClick={() => setAdding(false)}>Cancel</button>
-                <button className="pn-btn pn-btn-primary" style={{ padding: "6px 8px", fontSize: 11 }} disabled={!steamPick} onClick={submit}>Add</button>
+                <button className="pn-btn pn-btn-ghost" style={{ padding: "6px 8px", fontSize: 11 }} onClick={resetAddForm}>Cancel</button>
+                <button className="pn-btn pn-btn-primary" style={{ padding: "6px 8px", fontSize: 11 }} disabled={customMode ? !name.trim() : !steamPick} onClick={submit}>Add</button>
               </div>
             </div>
           ) : (

@@ -8,10 +8,13 @@ import { useConfirm } from "../components/ConfirmProvider";
 // ---------- home dashboard ----------
 export default function Library({ games, routesByGame, totalRuns, userId, onOpenGame, onAddGame, onDeleteGame, onExplore }) {
   const [adding, setAdding] = useState(false);
+  const [customMode, setCustomMode] = useState(false);
   const [name, setName] = useState("");
   const [steamPick, setSteamPick] = useState(null);
   const [gameStats, setGameStats] = useState({});
   const confirm = useConfirm();
+
+  const resetAddForm = () => { setAdding(false); setCustomMode(false); setName(""); setSteamPick(null); };
 
   useEffect(() => {
     (async () => {
@@ -36,7 +39,14 @@ export default function Library({ games, routesByGame, totalRuns, userId, onOpen
     })();
   }, [games, routesByGame, userId]);
 
-  const submitAdd = () => { if (steamPick) { onAddGame(steamPick.name, steamPick); setName(""); setSteamPick(null); setAdding(false); } };
+  const submitAdd = () => {
+    if (customMode) {
+      if (name.trim()) { onAddGame(name.trim(), { custom: true }); resetAddForm(); }
+    } else if (steamPick) {
+      onAddGame(steamPick.name, steamPick);
+      resetAddForm();
+    }
+  };
 
   return (
     <div className="pn-view">
@@ -99,24 +109,47 @@ export default function Library({ games, routesByGame, totalRuns, userId, onOpen
           (adding ? (
             <div className="pn-tile" style={{ cursor: "default" }} onClick={(e) => e.stopPropagation()}>
               <div className="pn-label" style={{ marginTop: 0 }}>New game</div>
-              <GameSearchField
-                className="pn-input"
-                autoFocus
-                placeholder="Search Steam for a game"
-                value={name}
-                onChange={(v) => { setName(v); setSteamPick(null); }}
-                onPick={(r) => { setName(r.name); setSteamPick(r); }}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") submitAdd();
-                  if (e.key === "Escape") setAdding(false);
-                }}
-              />
-              <div className="pn-hint" style={{ marginTop: 6 }}>
-                {steamPick ? `Matched "${steamPick.name}" on Steam.` : "Pick a match from the dropdown — only verified Steam games can be logged."}
-              </div>
+              {customMode ? (
+                <>
+                  <input
+                    className="pn-input"
+                    autoFocus
+                    placeholder="Game name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") submitAdd();
+                      if (e.key === "Escape") resetAddForm();
+                    }}
+                  />
+                  <div className="pn-hint" style={{ marginTop: 6 }}>
+                    Custom game — not on Steam, so routes here can't be published to Explore.{" "}
+                    <button className="pn-author-link" onClick={() => { setCustomMode(false); setName(""); }}>Search Steam instead</button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <GameSearchField
+                    className="pn-input"
+                    autoFocus
+                    placeholder="Search Steam for a game"
+                    value={name}
+                    onChange={(v) => { setName(v); setSteamPick(null); }}
+                    onPick={(r) => { setName(r.name); setSteamPick(r); }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") submitAdd();
+                      if (e.key === "Escape") resetAddForm();
+                    }}
+                  />
+                  <div className="pn-hint" style={{ marginTop: 6 }}>
+                    {steamPick ? `Matched "${steamPick.name}" on Steam.` : "Pick a match from the dropdown — only verified Steam games can be logged."}{" "}
+                    <button className="pn-author-link" onClick={() => { setCustomMode(true); setName(""); setSteamPick(null); }}>Can't find it? Add a custom game</button>
+                  </div>
+                </>
+              )}
               <div className="pn-btn-row" style={{ marginTop: 10 }}>
-                <button className="pn-btn pn-btn-ghost" onClick={() => setAdding(false)}>Cancel</button>
-                <button className="pn-btn pn-btn-primary" disabled={!steamPick} onClick={submitAdd}>Add</button>
+                <button className="pn-btn pn-btn-ghost" onClick={resetAddForm}>Cancel</button>
+                <button className="pn-btn pn-btn-primary" disabled={customMode ? !name.trim() : !steamPick} onClick={submitAdd}>Add</button>
               </div>
             </div>
           ) : (

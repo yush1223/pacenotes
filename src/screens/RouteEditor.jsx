@@ -57,12 +57,22 @@ export default function RouteEditor({ gameId, initial, userId, onCancel, onSave 
       target_ms: useTarget ? parseTargetInput(targetStr) : null,
       segments: cleanSegs,
       use_target: useTarget,
+      // Only present when this editor was opened via "Remix" — carried
+      // through untouched so saveRoute() can record lineage on insert.
+      remixedFrom: initial?.remixedFrom,
+      remixedFromName: initial?.remixedFromName,
+      remixedFromOwnerId: initial?.remixedFromOwnerId,
     });
   };
 
   return (
     <div className="pn-view">
-      <BackHead onBack={onCancel} eyebrow={initial ? "Edit route" : "New route"} title="Route editor" />
+      <BackHead onBack={onCancel} eyebrow={initial?.id ? "Edit route" : initial?.remixedFrom ? "Remix route" : "New route"} title="Route editor" />
+      {initial?.remixedFrom && !initial?.id && (
+        <div className="pn-hint" style={{ marginTop: -8, marginBottom: 14 }}>
+          Starting from "{initial.remixedFromName}" by {initial.remixedFromOwnerUsername || "the original author"} — edit freely, credit stays attached.
+        </div>
+      )}
       {pb && (
         <div className="pn-editor-pb-note">
           <span className="pn-editor-pb-note-label">personal best</span>

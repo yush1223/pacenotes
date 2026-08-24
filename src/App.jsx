@@ -11,6 +11,7 @@ import RunScreen from "./screens/RunScreen";
 import HistoryScreen from "./screens/HistoryScreen";
 import Explore from "./screens/Explore";
 import UserProfile from "./screens/UserProfile";
+import RoutePreview from "./screens/RoutePreview";
 
 // ---------- root ----------
 export default function App() {
@@ -28,6 +29,9 @@ export default function App() {
   const [toast, setToast] = useState(null);
   const [profile, setProfile] = useState(null);
   const [profileTarget, setProfileTarget] = useState(null);
+  const [previewRoute, setPreviewRoute] = useState(null);
+  const [previewReturn, setPreviewReturn] = useState("explore");
+  const [profileReturn, setProfileReturn] = useState("explore");
 
   const userId = session?.user?.id;
 
@@ -65,8 +69,8 @@ export default function App() {
     return p;
   };
 
-  // Opening a public guide (from Explore or a user's profile) adds it to
-  // your library and jumps straight to it — nothing "yours" until you do.
+  // Opening a public guide (from a preview) adds it to your library and
+  // jumps straight to it — nothing "yours" until you say so.
   const openPublicRoute = async (route) => {
     await db.addToLibrary(route.id, userId);
     await reloadLibrary();
@@ -75,8 +79,39 @@ export default function App() {
     flash(`Added "${route.name}" to your library`);
   };
 
+  const openProfile = (target, fromScreen) => {
+    setProfileTarget(target);
+    setProfileReturn(fromScreen || "explore");
+    setScreen("profile");
+  };
+
+  const previewRouteFrom = (route, fromScreen) => {
+    setPreviewRoute(route);
+    setPreviewReturn(fromScreen);
+    setScreen("preview");
+  };
+
+  // A route you don't own gets forked into your own new route instead of
+  // edited in place — the original stays untouched and correctly
+  // attributed to its owner, and your copy carries permanent credit back.
+  const startRemix = (route) => {
+    setEditingRoute({
+      game_id: route.game_id,
+      name: `${route.name} (remix)`,
+      segments: route.segments,
+      target_ms: route.target_ms,
+      use_target: route.use_target,
+      remixedFrom: route.id,
+      remixedFromName: route.name,
+      remixedFromOwnerId: route.owner_id,
+      remixedFromOwnerUsername: route.owner?.username,
+    });
+    setEditorReturn("route");
+    setScreen("editor");
+  };
+
   const addGame = async (name, steamInfo) => {
-    const game = await db.findOrCreateGame({ name, steamAppid: steamInfo?.appid, headerImage: steamInfo?.image });
+    const game = await db.findOrCreateGame({ name, steamAppid: steamInfo?.appid, headerImage: steamInfo?.image, custom: steamInfo?.custom });
     setGames((prev) => (prev.some((g) => g.id === game.id) ? prev : [...prev, game]));
     setRoutesByGame((prev) => (prev[game.id] ? prev : { ...prev, [game.id]: [] }));
     return game.id;
@@ -121,8 +156,8 @@ export default function App() {
 
   const sidebarProps = {
     games,
-    activeGameId: screen === "library" || screen === "explore" || screen === "profile" ? null : gameId,
-    activeSection: screen === "explore" || screen === "profile" ? "explore" : "library",
+    activeGameId: screen === "library" || screen === "explore" || screen === "profile" || screen === "preview" ? null : gameId,
+    activeSection: screen === "explore" || screen === "profile" || screen === "preview" ? "explore" : "library",
     totalRuns,
     onHome: () => setScreen("library"),
     onExplore: () => setScreen("explore"),
@@ -155,7 +190,7 @@ export default function App() {
     );
   }
 
-  const wide = screen === "run" || screen === "route" || screen === "game" || screen === "library" || screen === "explore" || screen === "profile";
+  const wide = screen === "run" || screen === "route" || screen === "game" || screen === "library" || screen === "explore" || screen === "profile" || screen === "preview";
 
   return (
     <Shell toast={toast} sidebarProps={sidebarProps} wide={wide}>
@@ -175,16 +210,25 @@ export default function App() {
         <Explore
           userId={userId}
           onBack={() => setScreen("library")}
-          onOpenRoute={openPublicRoute}
-          onOpenProfile={(target) => { setProfileTarget(target); setScreen("profile"); }}
+          onPreviewRoute={(r) => previewRouteFrom(r, "explore")}
+          onOpenProfile={(target) => openProfile(target, "explore")}
         />
       )}
       {screen === "profile" && profileTarget && (
         <UserProfile
           userId={profileTarget.userId}
           username={profileTarget.username}
-          onBack={() => setScreen("explore")}
-          onOpenRoute={openPublicRoute}
+          onBack={() => setScreen(profileReturn)}
+          onPreviewRoute={(r) => previewRouteFrom(r, "profile")}
+        />
+      )}
+      {screen === "preview" && previewRoute && (
+        <RoutePreview
+          route={previewRoute}
+          userId={userId}
+          onBack={() => setScreen(previewReturn)}
+          onAdd={openPublicRoute}
+          onOpenProfile={(target) => openProfile(target, "preview")}
         />
       )}
       {screen === "game" && (
@@ -212,10 +256,12 @@ export default function App() {
           userId={userId}
           onBack={() => setScreen(gameId ? "game" : "explore")}
           onEdit={(route) => { setEditingRoute(route); setEditorReturn("route"); setScreen("editor"); }}
+          onRemix={startRemix}
           onDelete={async (route) => { await deleteRoute(route); setScreen("game"); }}
           onStartRun={() => setScreen("run")}
           onHistory={() => setScreen("history")}
           onVisibilityChange={reloadLibrary}
+          onOpenProfile={(target) => openProfile(target, "route")}
           flash={flash}
         />
       )}

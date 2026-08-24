@@ -45,7 +45,16 @@ export default function GameDetail({ game, routes, userId, onBack, onOpenRoute, 
             <div className="pn-tile" key={r.id} onClick={() => onOpenRoute(r.id)}>
               <div className="pn-tile-idx">{String(i + 1).padStart(2, "0")}</div>
               <div className="pn-tile-title">{r.name}</div>
-              {!isMine && <div className="pn-hint" style={{ marginTop: -8, marginBottom: 10 }}>by {owners[r.owner_id] || "…"}</div>}
+              {!isMine && (
+                <div className="pn-hint" style={{ marginTop: -8, marginBottom: 10 }}>
+                  by {owners[r.owner_id] || "…"}{r.remixed_from_name && " · remix"}
+                </div>
+              )}
+              {isMine && r.remixed_from_name && (
+                <div className="pn-hint" style={{ marginTop: -8, marginBottom: 10 }}>
+                  ↻ remix of "{r.remixed_from_name}"
+                </div>
+              )}
               <div className="pn-tile-foot">
                 <div className="pn-instrument-row">
                   <div className="pn-instrument">

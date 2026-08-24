@@ -421,6 +421,7 @@ button, input, textarea, select { font-family: inherit; }
 .pn-publish-status-text { color: var(--ink-dim); }
 .pn-publish-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ink-dim); opacity: 0.5; flex-shrink: 0; }
 .pn-publish-dot-live { background: var(--brass); opacity: 1; box-shadow: 0 0 6px var(--brass); }
+.pn-remix-credit { padding: 8px 12px; border-left: 2px solid var(--brass-dim); background: var(--panel); }
 .pn-editor-pb-note-label { font-family: 'JetBrains Mono', monospace; font-size: 10.5px; font-weight: 600; letter-spacing: 0.08em; color: var(--ink-dim); text-transform: uppercase; }
 .pn-editor-pb-note-hint { font-size: 11.5px; color: var(--ink-dim); }
 

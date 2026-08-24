@@ -3,18 +3,30 @@ import { supabase } from "./supabaseClient";
 // ---------- games (shared catalog) ----------
 
 // Find an existing game by steam_appid, else create one. A steamAppid is
-// required — games are only ever created from a picked Steam search
-// result, never freeform text, so nothing unverifiable ever lands in the
-// shared catalog (and therefore can never be published). Games are shared
-// across everyone — nobody owns a game row, so there's no delete-game here
-// on purpose.
-export async function findOrCreateGame({ name, steamAppid, headerImage }) {
-  if (steamAppid == null) throw new Error("Pick a game from the Steam search results — typed names alone can't be added.");
-  const { data: existing } = await supabase.from("games").select("*").eq("steam_appid", steamAppid).maybeSingle();
-  if (existing) return existing;
+// required UNLESS the caller explicitly opts into `custom` — an escape
+// hatch for niche/homebrew stuff that isn't on Steam. Custom games have no
+// steam_appid, which is also exactly what setRouteVisibility() checks
+// before allowing a publish, so "can't be published" falls straight out
+// of "isn't a verified Steam game" with no extra flag to keep in sync.
+// Games are shared across everyone — nobody owns a game row, so there's
+// no delete-game here on purpose.
+export async function findOrCreateGame({ name, steamAppid, headerImage, custom }) {
+  if (steamAppid == null && !custom) {
+    throw new Error('Pick a game from the Steam search results, or choose "Add a custom game" for something niche.');
+  }
+  if (steamAppid != null) {
+    const { data: existing } = await supabase.from("games").select("*").eq("steam_appid", steamAppid).maybeSingle();
+    if (existing) return existing;
+  } else {
+    // Custom games dedupe by exact name among other custom games only —
+    // never against a real Steam game of the same name, since that would
+    // silently smuggle a route onto a publishable game.
+    const { data: existing } = await supabase.from("games").select("*").is("steam_appid", null).eq("name", name).maybeSingle();
+    if (existing) return existing;
+  }
   const { data, error } = await supabase
     .from("games")
-    .insert({ name, steam_appid: steamAppid, header_image: headerImage ?? null })
+    .insert({ name, steam_appid: steamAppid ?? null, header_image: headerImage ?? null })
     .select()
     .single();
   if (error) throw error;
@@ -69,13 +81,24 @@ export async function removeGameFromMyLibrary(gameId, userId) {
 
 // ---------- routes ----------
 
+// Joins the game's steam_appid (so the UI knows whether this route can
+// ever be published) and, if this route is a remix, the original author's
+// live username (falls back to the remixed_from_name/owner_id snapshot on
+// the row itself if their profile is gone).
 export async function getRoute(routeId) {
-  const { data, error } = await supabase.from("routes").select("*").eq("id", routeId).single();
+  const { data, error } = await supabase
+    .from("routes")
+    .select("*, games(steam_appid), owner:profiles!owner_id(username), remix_owner:profiles!remixed_from_owner_id(username)")
+    .eq("id", routeId)
+    .single();
   if (error) throw error;
   return data;
 }
 
-// route: { id?, game_id, name, segments, target_ms, use_target, visibility? }
+// route: { id?, game_id, name, segments, target_ms, use_target, visibility?,
+//          remixedFrom?, remixedFromName?, remixedFromOwnerId? }
+// The remix* fields only ever apply on insert (creating a new route from
+// someone else's) — lineage doesn't change on later edits.
 export async function saveRoute(route, userId) {
   if (route.id) {
     const { data, error } = await supabase
@@ -102,6 +125,9 @@ export async function saveRoute(route, userId) {
       target_ms: route.target_ms,
       use_target: route.use_target,
       visibility: "private",
+      remixed_from: route.remixedFrom ?? null,
+      remixed_from_name: route.remixedFromName ?? null,
+      remixed_from_owner_id: route.remixedFromOwnerId ?? null,
     })
     .select()
     .single();
