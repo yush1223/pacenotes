@@ -42,12 +42,17 @@ export async function searchSteamGames(term) {
   }
 }
 
-// The search dropdown's `image` is Steam's tiny_image (231x87) — fine for
-// a small thumbnail, visibly soft stretched across a big library tile or
-// banner. This pulls a real 1920x1080 screenshot instead (every Steam
-// store page has one, however small the game), via the steam-details edge
-// function. Only called once, when a game is actually being created —
-// not on every keystroke in the search box.
+// Two tiers of art, both from the steam-details edge function (proxies
+// Steam's appdetails for one appid):
+//   - headerImage: the standard 460x215 store header (logo/box-art look,
+//     small enough to be crisp on a tile without costing much bandwidth)
+//   - image: a real 1920x1080 gameplay screenshot — every Steam store
+//     page has one, however small the game, but it's a much bigger
+//     download and a gameplay shot rather than branded art
+// Tiles/grids use headerImage; the big banner on a game's own page (where
+// a screenshot's extra resolution actually shows) fetches `image` lazily
+// via this same call rather than storing it, so it's never paid for on
+// pages that don't need it.
 export async function fetchSteamGameImage(appid) {
   if (appid == null) return null;
   try {
@@ -61,7 +66,7 @@ export async function fetchSteamGameImage(appid) {
     });
     if (!res.ok) return null;
     const json = await res.json();
-    return json.image || json.headerImage || null;
+    return { image: json.image || null, headerImage: json.headerImage || null };
   } catch {
     return null;
   }

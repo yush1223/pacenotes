@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import * as db from "../lib/db";
+import { fetchSteamGameImage } from "../lib/steam";
 import { fmt } from "../lib/time";
 import BackHead from "../components/BackHead";
 
@@ -15,6 +16,9 @@ export default function Explore({ userId, onBack, onPreviewRoute, onOpenProfile 
   const [published, setPublished] = useState(null);
   const [selectedGame, setSelectedGame] = useState(null);
   const [routes, setRoutes] = useState(null);
+  // Tile-tier art shows immediately (selectedGame.image); a real
+  // screenshot is fetched on the way in and swapped once it lands.
+  const [banner, setBanner] = useState(null);
 
   useEffect(() => {
     db.listPublicGames().then(setPublished);
@@ -23,17 +27,22 @@ export default function Explore({ userId, onBack, onPreviewRoute, onOpenProfile 
   useEffect(() => {
     if (!selectedGame) return;
     setRoutes(null);
+    setBanner(selectedGame.image || null);
     const load = selectedGame.steam_appid
       ? db.listPublicRoutesBySteamAppid(selectedGame.steam_appid)
       : db.listPublicRoutes({ gameId: selectedGame.id });
     load.then(setRoutes);
+    if (!selectedGame.steam_appid) return;
+    let live = true;
+    fetchSteamGameImage(selectedGame.steam_appid).then((d) => { if (live && d?.image) setBanner(d.image); });
+    return () => { live = false; };
   }, [selectedGame]);
 
   if (selectedGame) {
     return (
       <div className="pn-view">
         <BackHead onBack={() => setSelectedGame(null)} eyebrow="Explore" title={selectedGame.name} />
-        {selectedGame.image && <div className="pn-explore-banner" style={{ backgroundImage: `url(${selectedGame.image})` }} />}
+        {banner && <div className="pn-explore-banner" style={{ backgroundImage: `url(${banner})` }} />}
         {routes == null ? (
           <div className="pn-empty">Loading…</div>
         ) : routes.length === 0 ? (

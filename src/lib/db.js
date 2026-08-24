@@ -26,14 +26,14 @@ export async function findOrCreateGame({ name, steamAppid, headerImage, custom }
     if (existing) return existing;
   }
   // The search dropdown's headerImage is a tiny 231x87 thumbnail — only
-  // good enough for that dropdown. Since we're actually creating this
-  // game's shared catalog row (a one-time cost, not per-keystroke), swap
-  // in a real screenshot so every library tile/banner it appears on isn't
-  // stretched-blurry from day one.
-  const betterImage = steamAppid != null ? await fetchSteamGameImage(steamAppid) : null;
+  // good enough for that dropdown. What gets stored on the shared catalog
+  // row is the standard 460x215 header instead, crisp on a tile without
+  // the size of a full screenshot; the big screenshot itself is fetched
+  // lazily on a game's own page, not stored (see fetchSteamGameImage).
+  const details = steamAppid != null ? await fetchSteamGameImage(steamAppid) : null;
   const { data, error } = await supabase
     .from("games")
-    .insert({ name, steam_appid: steamAppid ?? null, header_image: betterImage || headerImage || null })
+    .insert({ name, steam_appid: steamAppid ?? null, header_image: details?.headerImage || headerImage || null })
     .select()
     .single();
   if (error) throw error;

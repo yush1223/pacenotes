@@ -131,6 +131,14 @@ export default function RunScreen({ routeId, userId, onExit, onFinished }) {
 
       <div className="pn-clockbox">
         <FlapClock text={fmt(elapsed)} />
+        {pb && (
+          <div className="pn-clock-vs pn-clock-vs-total">
+            total vs <span className="pn-brass-text">pb {fmt(pb.total_ms, false)}</span>
+            {elapsed > 0 && (
+              <span className={elapsed - pb.total_ms > 0 ? "pn-bad" : "pn-good"}> ({fmtDelta(elapsed - pb.total_ms)})</span>
+            )}
+          </div>
+        )}
         {currentAim != null ? (
           <div className="pn-clock-vs">
             this split {fmt(elapsedInSeg, false)} / <span className={currentAim.isPb ? "pn-brass-text" : ""}>{currentAim.isPb ? "pb" : "target"} {fmt(currentAim.value, false)}</span>
@@ -210,6 +218,11 @@ function PBBurst() {
 function RunSummary({ route, result, onReset, onExit }) {
   const { total, splits, prevPb, isNewPB } = result;
   const durations = toDurations(splits);
+  // Compare against prevPb (your best going into this run) whenever one
+  // exists — including when this run just beat it. That's the single most
+  // useful case to see a delta for ("beat your old pb by -0:03"), so it
+  // must never be suppressed just because isNewPB is true; only a
+  // genuine first-ever run (prevPb null) has nothing to compare against.
   const deltaSeries = prevPb ? splits.map((s, i) => s - (prevPb.splits[i] ?? s)) : [];
   const useTarget = route.use_target !== false;
 
@@ -221,7 +234,7 @@ function RunSummary({ route, result, onReset, onExit }) {
         <FlapClock text={fmt(total, false)} size="md" />
       </div>
 
-      {!isNewPB && deltaSeries.length > 0 && <DeltaGraph pointsDelta={deltaSeries} />}
+      {deltaSeries.length > 0 && <DeltaGraph pointsDelta={deltaSeries} />}
 
       <table className="pn-split-table">
         <thead>
@@ -230,7 +243,7 @@ function RunSummary({ route, result, onReset, onExit }) {
         <tbody>
           {route.segments.map((s, i) => {
             const segTime = durations[i];
-            const pbCum = !isNewPB && prevPb ? prevPb.splits[i] : null;
+            const pbCum = prevPb ? prevPb.splits[i] : null;
             const delta = pbCum != null ? splits[i] - pbCum : null;
             const target = useTarget && s.target_ms != null ? s.target_ms : null;
             const targetDelta = target != null ? segTime - target : null;
