@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { getKey } from "../lib/storage";
+import { getKey, setKey } from "../lib/storage";
 import { fmt, toDurations } from "../lib/time";
 import BackHead from "../components/BackHead";
 
@@ -10,6 +10,13 @@ export default function RouteDetail({ routeId, onBack, onEdit, onDelete, onStart
   if (!route) return <div className="pn-view">Loading…</div>;
 
   const pbDurations = route.pb ? toDurations(route.pb.segments) : null;
+
+  const resetPB = async () => {
+    if (!confirm(`Clear the personal best for "${route.name}"? This can't be undone — your next run starts fresh.`)) return;
+    const updated = { ...route, pb: null };
+    await setKey(`pn_route_${route.id}`, updated);
+    setRoute(updated);
+  };
 
   return (
     <div className="pn-view">
@@ -35,8 +42,17 @@ export default function RouteDetail({ routeId, onBack, onEdit, onDelete, onStart
           </div>
 
           <button
+            className="pn-btn pn-btn-ghost pn-btn-full"
+            style={{ marginTop: 16 }}
+            disabled={!route.pb}
+            onClick={resetPB}
+          >
+            Reset PB
+          </button>
+
+          <button
             className="pn-btn pn-btn-danger-ghost pn-btn-full"
-            style={{ marginTop: 24 }}
+            style={{ marginTop: 10 }}
             onClick={() => { if (confirm(`Delete route "${route.name}"? This can't be undone.`)) onDelete(route); }}
           >
             Delete route

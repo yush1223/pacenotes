@@ -14,7 +14,6 @@ export default function RunScreen({ routeId, onExit, onFinished }) {
   const [segIdx, setSegIdx] = useState(0);
   const [splits, setSplits] = useState([]);
   const [finished, setFinished] = useState(false);
-  const [useTarget, setUseTarget] = useState(true);
   const startRef = useRef(null);
   const rafRef = useRef(null);
 
@@ -83,10 +82,11 @@ export default function RunScreen({ routeId, onExit, onFinished }) {
 
   // What to aim for on each segment: PB's own time for that segment once
   // one exists (it's the thing the graph is already racing against), else
-  // the optional manual target — unless the whole-run target toggle is
-  // off, in which case target never counts, even as a fallback. Each aim
-  // tracks its own source so the UI can label it (and give PB the brass
-  // treatment every other "record" gets in this app).
+  // the optional manual target — unless the route's target toggle (set in
+  // the route editor) is off, in which case target never counts, even as
+  // a fallback. Each aim tracks its own source so the UI can label it
+  // (and give PB the brass treatment every other "record" gets here).
+  const useTarget = route.useTarget !== false;
   const pbDurations = route.pb ? toDurations(route.pb.segments) : null;
   const aims = route.segments.map((_, i) => {
     if (pbDurations && pbDurations[i] != null) return { value: pbDurations[i], isPb: true };
@@ -103,6 +103,13 @@ export default function RunScreen({ routeId, onExit, onFinished }) {
   const elapsedInSeg = Math.max(0, elapsed - segStartElapsed);
   const currentAim = aims[segIdx];
   const liveSegDelta = currentAim != null && elapsed > 0 ? elapsedInSeg - currentAim.value : null;
+
+  // Live bar for the graph specifically compares against PB only (the
+  // graph is captioned "vs personal best" — target isn't part of that
+  // promise). Counts down from -pbDuration toward 0 as you spend time in
+  // the segment, crossing into red/positive once you've gone over pace.
+  const pbDurationForCurrent = pbDurations && pbDurations[segIdx] != null ? pbDurations[segIdx] : null;
+  const livePbDelta = pbDurationForCurrent != null && elapsed > 0 ? elapsedInSeg - pbDurationForCurrent : null;
 
   return (
     <div className="pn-view">
@@ -122,11 +129,6 @@ export default function RunScreen({ routeId, onExit, onFinished }) {
         ) : (
           <div className="pn-clock-vs pn-ink-dim">no pb or target set for this segment yet</div>
         )}
-        {route.targets && route.targets.some((t) => t != null) && (
-          <button className="pn-target-toggle" onClick={() => setUseTarget((v) => !v)}>
-            target {useTarget ? "on" : "off"}
-          </button>
-        )}
       </div>
 
       {!finished ? (
@@ -134,20 +136,24 @@ export default function RunScreen({ routeId, onExit, onFinished }) {
           <div>
             <PaceRoller segments={route.segments} currentIdx={segIdx} aims={aims} actuals={actualDurations} />
             {currentSeg.notes && (
-              <ul className="pn-note-steps pn-note-steps-run">
-                {currentSeg.notes.split("\n").filter(Boolean).map((line, j) => <li key={j}>{line}</li>)}
-              </ul>
+              <>
+                <label className="pn-label">Notes</label>
+                <ul className="pn-note-steps pn-note-steps-run">
+                  {currentSeg.notes.split("\n").filter(Boolean).map((line, j) => <li key={j}>{line}</li>)}
+                </ul>
+              </>
             )}
           </div>
 
           <div>
+            <div className="pn-roller-status" style={{ visibility: "hidden" }} aria-hidden="true">&nbsp;</div>
             {lastDelta != null && (
               <div className={"pn-delta-readout " + (lastDelta > 0 ? "pn-bad" : "pn-good")}>
                 {lastDelta > 0 ? "behind pb pace → " : "ahead of pb pace → "}{fmtDelta(lastDelta)}
               </div>
             )}
 
-            <DeltaGraph pointsDelta={deltaSeries.length ? deltaSeries : null} />
+            <DeltaGraph pointsDelta={deltaSeries.length ? deltaSeries : null} livePoint={livePbDelta} />
 
             <div className="pn-btn-row" style={{ marginTop: 14 }}>
               <button className="pn-btn pn-btn-ghost" onClick={toggleRun}>{running ? "Pause" : elapsed === 0 ? "Start" : "Resume"}</button>

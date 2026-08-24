@@ -7,6 +7,7 @@ import BackHead from "../components/BackHead";
 export default function RouteEditor({ gameId, initial, onCancel, onSave }) {
   const [name, setName] = useState(initial?.name || "");
   const [targetStr, setTargetStr] = useState(initial?.target != null ? fmt(initial.target, false) : "");
+  const [useTarget, setUseTarget] = useState(initial?.useTarget !== false);
   const [segments, setSegments] = useState(
     initial?.segments?.length
       ? initial.segments.map((s, i) => ({
@@ -40,6 +41,7 @@ export default function RouteEditor({ gameId, initial, onCancel, onSave }) {
       segments: cleanSegs,
       pb: initial?.pb || null,
       targets: kept.map((s) => parseTargetInput(s.targetStr)),
+      useTarget,
     });
   };
 
@@ -51,9 +53,12 @@ export default function RouteEditor({ gameId, initial, onCancel, onSave }) {
       <label className="pn-label">Total target (optional)</label>
       <input className="pn-input pn-input-mono" placeholder="mm:ss or h:mm:ss — e.g. current WR" value={targetStr} onChange={(e) => setTargetStr(e.target.value)} />
       <label className="pn-label" style={{ marginTop: 18 }}>Segments</label>
-      <div className="pn-hint" style={{ marginBottom: 10 }}>
+      <div className="pn-hint" style={{ marginBottom: 6 }}>
         A per-segment target is optional — once you have a PB, that becomes the thing to chase automatically. Set a target for segments you don't have a PB pace for yet.
       </div>
+      <button className="pn-target-toggle" onClick={() => setUseTarget((v) => !v)} style={{ marginBottom: 10 }}>
+        segment targets during runs: {useTarget ? "on" : "off"}
+      </button>
 
       <div className="pn-seg-editor-list pn-stagger">
         {segments.map((s, i) => (
