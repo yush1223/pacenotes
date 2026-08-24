@@ -248,6 +248,7 @@ button, input, textarea, select { font-family: inherit; }
 .pn-masthead-rule { height: 1px; background: linear-gradient(90deg, var(--hairline), transparent); margin: 16px 0 14px; }
 .pn-masthead-readout { font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.06em; color: var(--ink-dim); }
 .pn-masthead-readout .pn-mono-num { color: var(--ink); font-weight: 600; }
+.pn-home-pitch { max-width: 640px; font-size: 14px; line-height: 1.65; color: var(--ink-dim); }
 
 .pn-view-head { margin-bottom: 24px; }
 .pn-eyebrow { font-family: 'JetBrains Mono', monospace; font-size: 10.5px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-dim); margin-bottom: 4px; }

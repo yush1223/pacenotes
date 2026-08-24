@@ -13,6 +13,7 @@ import HistoryScreen from "./screens/HistoryScreen";
 import Explore from "./screens/Explore";
 import UserProfile from "./screens/UserProfile";
 import RoutePreview from "./screens/RoutePreview";
+import Home from "./screens/Home";
 
 // Screens that only make sense with an account — browsing (Explore,
 // previewing a route, viewing a profile) never requires one.
@@ -216,16 +217,22 @@ export default function App() {
   }
 
   // A guest landing on (or bounced back to) an account-only screen sees
-  // Explore instead — computed at render time so there's never a flash of
-  // the blocked screen while an effect catches up.
-  const effectiveScreen = !session && GUEST_BLOCKED.has(screen) ? "explore" : screen;
+  // the Home landing page instead — a proper "what is this and what can I
+  // do" page, not a silent drop into the Discover grid with zero context.
+  // Computed at render time so there's never a flash of the blocked
+  // screen while an effect catches up.
+  const effectiveScreen = !session && GUEST_BLOCKED.has(screen) ? "home" : screen;
 
   const sidebarProps = {
     games,
-    activeGameId: effectiveScreen === "library" || effectiveScreen === "explore" || effectiveScreen === "profile" || effectiveScreen === "preview" ? null : gameId,
-    activeSection: !session || effectiveScreen === "explore" || effectiveScreen === "profile" || effectiveScreen === "preview" ? "explore" : "library",
+    activeGameId: effectiveScreen === "library" || effectiveScreen === "explore" || effectiveScreen === "profile" || effectiveScreen === "preview" || effectiveScreen === "home" ? null : gameId,
+    activeSection: effectiveScreen === "home" ? "home" : effectiveScreen === "explore" || effectiveScreen === "profile" || effectiveScreen === "preview" ? "explore" : "library",
     totalRuns,
-    onHome: () => (userId ? setScreen("library") : requireAuth("explore", "Sign in to build your library")),
+    // The brand logo and the Library tab both mean "go to my base" — for
+    // a signed-in user that's their Library; for a guest there's no
+    // library to go to, so it's the Home landing page instead (not
+    // straight to a sign-in wall — that's what the Sign In button is for).
+    onHome: () => setScreen(userId ? "library" : "home"),
     onExplore: () => setScreen("explore"),
     onSelectGame: (id) => { setGameId(id); setScreen("game"); },
     onAddGame: async (name, steamInfo) => { const id = await addGame(name, steamInfo); setGameId(id); setScreen("game"); },
@@ -237,10 +244,16 @@ export default function App() {
     onSignOut: signOut,
   };
 
-  const wide = effectiveScreen === "run" || effectiveScreen === "practice" || effectiveScreen === "route" || effectiveScreen === "game" || effectiveScreen === "library" || effectiveScreen === "explore" || effectiveScreen === "profile" || effectiveScreen === "preview";
+  const wide = effectiveScreen === "run" || effectiveScreen === "practice" || effectiveScreen === "route" || effectiveScreen === "game" || effectiveScreen === "library" || effectiveScreen === "explore" || effectiveScreen === "profile" || effectiveScreen === "preview" || effectiveScreen === "home";
 
   return (
     <Shell toast={toast} sidebarProps={sidebarProps} wide={wide}>
+      {effectiveScreen === "home" && (
+        <Home
+          onExplore={() => setScreen("explore")}
+          onSignIn={() => requireAuth("home", "Sign in to Pacenotes")}
+        />
+      )}
       {effectiveScreen === "library" && (
         <Library
           games={games}
@@ -256,7 +269,7 @@ export default function App() {
       {effectiveScreen === "explore" && (
         <Explore
           userId={userId}
-          onBack={() => setScreen(userId ? "library" : "explore")}
+          onBack={() => setScreen(userId ? "library" : "home")}
           onPreviewRoute={(r) => previewRouteFrom(r, "explore")}
           onOpenProfile={(target) => openProfile(target, "explore")}
         />

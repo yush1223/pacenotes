@@ -50,13 +50,15 @@ export default function Sidebar({ games, activeGameId, activeSection, totalRuns,
       <div className="pn-sidebar-rule" />
 
       <div className="pn-sidebar-tabs">
-        <button className={"pn-sidebar-tab" + (activeSection !== "explore" ? " pn-sidebar-tab-active" : "")} onClick={onHome}>Library</button>
+        <button className={"pn-sidebar-tab" + (activeSection === "library" ? " pn-sidebar-tab-active" : "")} onClick={onHome}>Library</button>
         <button className={"pn-sidebar-tab" + (activeSection === "explore" ? " pn-sidebar-tab-active" : "")} onClick={onExplore}>Explore</button>
       </div>
 
-      {activeSection === "explore" ? (
+      {activeSection !== "library" ? (
         <div className="pn-hint" style={{ marginTop: 14 }}>
-          Browsing public guides. Anything you open here gets added to your library automatically.
+          {activeSection === "home"
+            ? "Sign in to start your own library, or browse what's already published."
+            : "Browsing public guides. Anything you open here gets added to your library automatically."}
         </div>
       ) : (
         <>
