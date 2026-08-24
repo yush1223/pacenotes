@@ -3,7 +3,10 @@ import { useConfirm } from "./ConfirmProvider";
 import GameSearchField from "./GameSearchField";
 
 // ---------- persistent nav sidebar ----------
-export default function Sidebar({ games, activeGameId, totalRuns, onHome, onExplore, onSelectGame, onAddGame, onDeleteGame, userEmail, onSignOut }) {
+// Library and Explore are deliberately two real tabs, not one nav item
+// buried in a list next to the other — different content, different
+// purpose (yours vs. everyone's).
+export default function Sidebar({ games, activeGameId, activeSection, totalRuns, onHome, onExplore, onSelectGame, onAddGame, onDeleteGame, userEmail, onSignOut }) {
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState("");
   const [steamPick, setSteamPick] = useState(null);
@@ -20,56 +23,61 @@ export default function Sidebar({ games, activeGameId, totalRuns, onHome, onExpl
       </button>
       <div className="pn-sidebar-rule" />
 
-      <div className="pn-sidebar-nav" style={{ marginBottom: 14 }}>
-        <button className="pn-nav-item" onClick={onExplore}>
-          <span className="pn-nav-item-idx">→</span>
-          <span className="pn-nav-item-name">Explore</span>
-        </button>
+      <div className="pn-sidebar-tabs">
+        <button className={"pn-sidebar-tab" + (activeSection !== "explore" ? " pn-sidebar-tab-active" : "")} onClick={onHome}>Library</button>
+        <button className={"pn-sidebar-tab" + (activeSection === "explore" ? " pn-sidebar-tab-active" : "")} onClick={onExplore}>Explore</button>
       </div>
 
-      <div className="pn-sidebar-section-label">My library</div>
-      <div className="pn-sidebar-nav">
-        {games.map((g, i) => (
-          <button
-            key={g.id}
-            className={"pn-nav-item" + (g.id === activeGameId ? " pn-nav-item-active" : "")}
-            onClick={() => onSelectGame(g.id)}
-          >
-            <span className="pn-nav-item-idx">{String(i + 1).padStart(2, "0")}</span>
-            <span className="pn-nav-item-name">{g.name}</span>
-            <span
-              className="pn-nav-item-x"
-              onClick={async (e) => { e.stopPropagation(); if (await confirm(`Remove "${g.name}" from your library? Any routes you own for it are deleted too — routes you're just following stay untouched for their owner.`)) onDeleteGame(g.id); }}
-              role="button"
-              aria-label={`Remove ${g.name}`}
-            >
-              ✕
-            </span>
-          </button>
-        ))}
-      </div>
-      {adding ? (
-        <div className="pn-inline-form" style={{ flexDirection: "column", gap: 6 }}>
-          <GameSearchField
-            className="pn-input"
-            inputStyle={{ fontSize: 12.5 }}
-            autoFocus
-            placeholder="Game name"
-            value={name}
-            onChange={(v) => { setName(v); setSteamPick(null); }}
-            onPick={(r) => { setName(r.name); setSteamPick(r); }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") submit();
-              if (e.key === "Escape") setAdding(false);
-            }}
-          />
-          <div className="pn-btn-row">
-            <button className="pn-btn pn-btn-ghost" style={{ padding: "6px 8px", fontSize: 11 }} onClick={() => setAdding(false)}>Cancel</button>
-            <button className="pn-btn pn-btn-primary" style={{ padding: "6px 8px", fontSize: 11 }} onClick={submit}>Add</button>
-          </div>
+      {activeSection === "explore" ? (
+        <div className="pn-hint" style={{ marginTop: 14 }}>
+          Browsing public guides. Anything you open here gets added to your library automatically.
         </div>
       ) : (
-        <button className="pn-nav-add" onClick={() => setAdding(true)}>+ Log a game</button>
+        <>
+          <div className="pn-sidebar-nav">
+            {games.map((g, i) => (
+              <button
+                key={g.id}
+                className={"pn-nav-item" + (g.id === activeGameId ? " pn-nav-item-active" : "")}
+                onClick={() => onSelectGame(g.id)}
+              >
+                <span className="pn-nav-item-idx">{String(i + 1).padStart(2, "0")}</span>
+                <span className="pn-nav-item-name">{g.name}</span>
+                <span
+                  className="pn-nav-item-x"
+                  onClick={async (e) => { e.stopPropagation(); if (await confirm(`Remove "${g.name}" from your library? Any routes you own for it are deleted too — routes you're just following stay untouched for their owner.`)) onDeleteGame(g.id); }}
+                  role="button"
+                  aria-label={`Remove ${g.name}`}
+                >
+                  ✕
+                </span>
+              </button>
+            ))}
+          </div>
+          {adding ? (
+            <div className="pn-inline-form" style={{ flexDirection: "column", gap: 6 }}>
+              <GameSearchField
+                className="pn-input"
+                inputStyle={{ fontSize: 12.5 }}
+                autoFocus
+                placeholder="Game name"
+                value={name}
+                onChange={(v) => { setName(v); setSteamPick(null); }}
+                onPick={(r) => { setName(r.name); setSteamPick(r); }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") submit();
+                  if (e.key === "Escape") setAdding(false);
+                }}
+              />
+              <div className="pn-btn-row">
+                <button className="pn-btn pn-btn-ghost" style={{ padding: "6px 8px", fontSize: 11 }} onClick={() => setAdding(false)}>Cancel</button>
+                <button className="pn-btn pn-btn-primary" style={{ padding: "6px 8px", fontSize: 11 }} onClick={submit}>Add</button>
+              </div>
+            </div>
+          ) : (
+            <button className="pn-nav-add" onClick={() => setAdding(true)}>+ Log a game</button>
+          )}
+        </>
       )}
 
       <div className="pn-sidebar-spacer" />

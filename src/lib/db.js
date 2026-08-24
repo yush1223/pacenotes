@@ -215,6 +215,27 @@ export async function listPublicGames() {
   return Object.values(byId);
 }
 
+export async function getGameBySteamAppid(steamAppid) {
+  const { data, error } = await supabase.from("games").select("*").eq("steam_appid", steamAppid).maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
+// Guides for a Steam game, looked up by appid rather than our internal
+// game id — works even if nobody's created a `games` row for it yet
+// (just returns []), which is what lets Explore browse popular Steam
+// titles that have zero guides so far.
+export async function listPublicRoutesBySteamAppid(steamAppid) {
+  const { data, error } = await supabase
+    .from("routes")
+    .select("*, games!inner(id,name,header_image,steam_appid), profiles!owner_id(username)")
+    .eq("games.steam_appid", steamAppid)
+    .eq("visibility", "public")
+    .order("updated_at", { ascending: false });
+  if (error) throw error;
+  return data || [];
+}
+
 export async function addToLibrary(routeId, userId) {
   const { error } = await supabase.from("library").upsert({ user_id: userId, route_id: routeId });
   if (error) throw error;

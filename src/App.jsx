@@ -102,6 +102,7 @@ export default function App() {
   const sidebarProps = {
     games,
     activeGameId: screen === "library" || screen === "explore" ? null : gameId,
+    activeSection: screen === "explore" ? "explore" : "library",
     totalRuns,
     onHome: () => setScreen("library"),
     onExplore: () => setScreen("explore"),
