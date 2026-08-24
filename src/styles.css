@@ -374,31 +374,35 @@ body { margin: 0; }
 
 /* ---------- pace note roller ---------- */
 .pn-roller { margin: 18px 0 4px; }
+.pn-roller-status { display: flex; align-items: baseline; gap: 10px; margin-bottom: 8px; }
+.pn-roller-status-idx { font-family: 'JetBrains Mono', monospace; font-size: 10.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-dim); flex-shrink: 0; }
+.pn-roller-status-title { font-size: 13px; font-weight: 600; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pn-roller-window { position: relative; height: 238px; overflow: hidden; background: var(--panel); border: 1px solid var(--hairline); border-radius: 2px; }
 .pn-roller-window::before, .pn-roller-window::after { content: ""; position: absolute; left: 0; right: 0; height: 60px; z-index: 2; pointer-events: none; }
 .pn-roller-window::before { top: 0; background: linear-gradient(180deg, var(--panel), transparent); }
 .pn-roller-window::after { bottom: 0; background: linear-gradient(0deg, var(--panel), transparent); }
 .pn-roller-strip { transition: transform 480ms var(--ease-bounce); }
-.pn-roller-item { height: 34px; display: flex; align-items: center; gap: 10px; padding: 0 16px; transition: opacity var(--dur-base) var(--ease-out), font-size var(--dur-base) var(--ease-out); }
+.pn-roller-item { height: 34px; display: flex; align-items: center; gap: 10px; padding: 0 16px; border-left: 2px solid transparent; transition: opacity var(--dur-base) var(--ease-out), font-size var(--dur-base) var(--ease-out), background var(--dur-base) var(--ease-out); }
 .pn-roller-pad { height: 34px; }
 .pn-roller-num { font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: var(--ink-dim); width: 18px; flex-shrink: 0; }
 .pn-roller-text { font-size: 13px; transition: font-size var(--dur-base) var(--ease-out); }
 .pn-roller-done { opacity: 0.32; text-decoration: line-through; text-decoration-color: var(--hairline); }
 .pn-roller-upcoming { opacity: 0.4; }
-.pn-roller-current { font-weight: 700; font-size: 16px; }
+/* The active row: same "this is the active one" language as the sidebar
+   nav (solid left bar + background wash) instead of a separate marker
+   that needs its own explanation. */
+.pn-roller-current { font-weight: 700; font-size: 16px; background: rgba(255,255,255,0.045); border-left-color: var(--ink); }
 .pn-roller-current .pn-roller-text { font-size: 16px; }
-/* Fixed read-line the current segment aligns to, like a rally co-driver's
-   pace-note roller. Neutral, not red — this isn't a warning, it's a ruler. */
-.pn-roller-readline { position: absolute; left: 0; right: 0; top: 50%; height: 34px; margin-top: -17px; border-top: 1px solid var(--hairline-soft); border-bottom: 1px solid var(--hairline-soft); z-index: 1; pointer-events: none; }
-.pn-roller-readline::before, .pn-roller-readline::after { content: ""; position: absolute; top: -1px; bottom: -1px; width: 7px; border-top: 1px solid var(--ink-dim); border-bottom: 1px solid var(--ink-dim); }
-.pn-roller-readline::before { left: 0; border-left: 1px solid var(--ink-dim); }
-.pn-roller-readline::after { right: 0; border-right: 1px solid var(--ink-dim); }
 
 .pn-delta-readout { text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 13px; padding: 9px 0; border-top: 1px solid var(--hairline); border-bottom: 1px solid var(--hairline); margin-bottom: 12px; transition: color var(--dur-base) var(--ease-out); }
 
 .pn-scope { background: var(--panel); border: 1px solid var(--hairline); border-radius: 2px; padding: 10px 10px 8px; margin-bottom: 6px; }
 .pn-scope-svg { width: 100%; height: 72px; display: block; }
 .pn-scope-svg polyline { transition: points var(--dur-slow); }
+.pn-scope-svg.pn-scope-bars { height: 108px; }
+.pn-scope-svg.pn-scope-bars rect { transition: height var(--dur-slow) var(--ease-out), y var(--dur-slow) var(--ease-out); }
+.pn-scope-axislabel { font-family: 'JetBrains Mono', monospace; font-size: 8px; fill: var(--ink-dimmer); }
+.pn-scope-barlabel { font-family: 'JetBrains Mono', monospace; font-size: 9px; font-weight: 600; }
 .pn-scope-caption { font-family: 'JetBrains Mono', monospace; font-size: 9.5px; color: var(--ink-dim); text-align: center; margin-top: 4px; letter-spacing: 0.04em; }
 .pn-scope-empty { font-size: 11px; color: var(--ink-dim); font-family: 'JetBrains Mono', monospace; text-align: center; padding: 28px 10px; background: var(--panel); border: 1px dashed var(--hairline); border-radius: 2px; margin-bottom: 6px; }
 
