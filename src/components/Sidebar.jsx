@@ -6,7 +6,7 @@ import GameSearchField from "./GameSearchField";
 // Library and Explore are deliberately two real tabs, not one nav item
 // buried in a list next to the other — different content, different
 // purpose (yours vs. everyone's).
-export default function Sidebar({ games, activeGameId, activeSection, totalRuns, onHome, onExplore, onSelectGame, onAddGame, onDeleteGame, username, onUpdateUsername, onViewProfile, onSignIn, onSignOut }) {
+export default function Sidebar({ games, activeGameId, activeSection, totalRuns, onHome, onLibraryTab, onExplore, onSelectGame, onAddGame, onDeleteGame, username, onUpdateUsername, onViewProfile, onSignIn, onSignOut }) {
   const [adding, setAdding] = useState(false);
   const [customMode, setCustomMode] = useState(false);
   const [name, setName] = useState("");
@@ -50,7 +50,7 @@ export default function Sidebar({ games, activeGameId, activeSection, totalRuns,
       <div className="pn-sidebar-rule" />
 
       <div className="pn-sidebar-tabs">
-        <button className={"pn-sidebar-tab" + (activeSection === "library" ? " pn-sidebar-tab-active" : "")} onClick={onHome}>Library</button>
+        <button className={"pn-sidebar-tab" + (activeSection === "library" ? " pn-sidebar-tab-active" : "")} onClick={onLibraryTab}>Library</button>
         <button className={"pn-sidebar-tab" + (activeSection === "explore" ? " pn-sidebar-tab-active" : "")} onClick={onExplore}>Explore</button>
       </div>
 

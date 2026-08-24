@@ -228,11 +228,12 @@ export default function App() {
     activeGameId: effectiveScreen === "library" || effectiveScreen === "explore" || effectiveScreen === "profile" || effectiveScreen === "preview" || effectiveScreen === "home" ? null : gameId,
     activeSection: effectiveScreen === "home" ? "home" : effectiveScreen === "explore" || effectiveScreen === "profile" || effectiveScreen === "preview" ? "explore" : "library",
     totalRuns,
-    // The brand logo and the Library tab both mean "go to my base" — for
-    // a signed-in user that's their Library; for a guest there's no
-    // library to go to, so it's the Home landing page instead (not
-    // straight to a sign-in wall — that's what the Sign In button is for).
+    // The brand logo means "go to my base" — Library if signed in, the
+    // Home landing page if not (a soft landing, not a wall). The Library
+    // TAB is a more explicit ask specifically for library features, so
+    // for a guest it goes straight to sign-in instead.
     onHome: () => setScreen(userId ? "library" : "home"),
+    onLibraryTab: () => (userId ? setScreen("library") : requireAuth("home", "Sign in to build your library")),
     onExplore: () => setScreen("explore"),
     onSelectGame: (id) => { setGameId(id); setScreen("game"); },
     onAddGame: async (name, steamInfo) => { const id = await addGame(name, steamInfo); setGameId(id); setScreen("game"); },
