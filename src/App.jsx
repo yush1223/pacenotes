@@ -191,6 +191,7 @@ export default function App() {
           onStartRun={() => setScreen("run")}
           onHistory={() => setScreen("history")}
           onVisibilityChange={reloadLibrary}
+          flash={flash}
         />
       )}
       {screen === "run" && (

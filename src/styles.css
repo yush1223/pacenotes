@@ -392,6 +392,10 @@ button, input, textarea, select { font-family: inherit; }
 }
 .pn-editor-pb-note { display: flex; align-items: baseline; gap: 10px; margin-bottom: 16px; }
 .pn-publish-box { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--hairline-soft); }
+.pn-publish-status { display: flex; align-items: center; gap: 8px; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; letter-spacing: 0.02em; }
+.pn-publish-status-text { color: var(--ink-dim); }
+.pn-publish-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ink-dim); opacity: 0.5; flex-shrink: 0; }
+.pn-publish-dot-live { background: var(--brass); opacity: 1; box-shadow: 0 0 6px var(--brass); }
 .pn-editor-pb-note-label { font-family: 'JetBrains Mono', monospace; font-size: 10.5px; font-weight: 600; letter-spacing: 0.08em; color: var(--ink-dim); text-transform: uppercase; }
 .pn-editor-pb-note-hint { font-size: 11.5px; color: var(--ink-dim); }
 

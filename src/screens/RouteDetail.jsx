@@ -2,13 +2,13 @@ import { useState, useEffect } from "react";
 import * as db from "../lib/db";
 import { fmt } from "../lib/time";
 import BackHead from "../components/BackHead";
-import Switch from "../components/Switch";
 import { useConfirm } from "../components/ConfirmProvider";
 
 // ---------- route detail (roadbook) ----------
-export default function RouteDetail({ routeId, userId, onBack, onEdit, onDelete, onStartRun, onHistory, onVisibilityChange }) {
+export default function RouteDetail({ routeId, userId, onBack, onEdit, onDelete, onStartRun, onHistory, onVisibilityChange, flash }) {
   const [route, setRoute] = useState(null);
   const [pb, setPb] = useState(null);
+  const [publishBusy, setPublishBusy] = useState(false);
   const confirm = useConfirm();
 
   useEffect(() => {
@@ -27,11 +27,38 @@ export default function RouteDetail({ routeId, userId, onBack, onEdit, onDelete,
     setPb(null);
   };
 
-  const togglePublic = async (isPublic) => {
-    const visibility = isPublic ? "public" : "private";
-    await db.setRouteVisibility(route.id, visibility);
-    setRoute((r) => ({ ...r, visibility }));
-    onVisibilityChange?.();
+  const publish = async () => {
+    const ok = await confirm(
+      `Publish "${route.name}" to Explore? Anyone will be able to find it, follow it, and run it — you can unpublish any time.`,
+      { danger: false, confirmLabel: "Publish" }
+    );
+    if (!ok) return;
+    setPublishBusy(true);
+    try {
+      await db.setRouteVisibility(route.id, "public");
+      setRoute((r) => ({ ...r, visibility: "public" }));
+      onVisibilityChange?.();
+      flash?.(`Published — "${route.name}" is now visible in Explore`);
+    } finally {
+      setPublishBusy(false);
+    }
+  };
+
+  const unpublish = async () => {
+    const ok = await confirm(
+      `Unpublish "${route.name}"? It'll disappear from Explore, though anyone already following it keeps it in their library.`,
+      { danger: true, confirmLabel: "Unpublish" }
+    );
+    if (!ok) return;
+    setPublishBusy(true);
+    try {
+      await db.setRouteVisibility(route.id, "private");
+      setRoute((r) => ({ ...r, visibility: "private" }));
+      onVisibilityChange?.();
+      flash?.("Unpublished — private again");
+    } finally {
+      setPublishBusy(false);
+    }
   };
 
   return (
@@ -71,7 +98,21 @@ export default function RouteDetail({ routeId, userId, onBack, onEdit, onDelete,
           {isOwner && (
             <>
               <div className="pn-publish-box">
-                <Switch checked={route.visibility === "public"} onChange={togglePublic} label={route.visibility === "public" ? "Public — visible in Explore" : "Private — only you"} />
+                <div className="pn-publish-status">
+                  <span className={"pn-publish-dot" + (route.visibility === "public" ? " pn-publish-dot-live" : "")} />
+                  <span className={route.visibility === "public" ? "pn-brass-text" : "pn-publish-status-text"}>
+                    {route.visibility === "public" ? "Published — live in Explore" : "Private — only you"}
+                  </span>
+                </div>
+                {route.visibility === "public" ? (
+                  <button className="pn-btn pn-btn-ghost pn-btn-full" style={{ marginTop: 8 }} disabled={publishBusy} onClick={unpublish}>
+                    Unpublish
+                  </button>
+                ) : (
+                  <button className="pn-btn pn-btn-primary pn-btn-full" style={{ marginTop: 8 }} disabled={publishBusy} onClick={publish}>
+                    Publish to Explore
+                  </button>
+                )}
               </div>
 
               <button
