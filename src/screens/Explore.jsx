@@ -16,6 +16,7 @@ export default function Explore({ userId, onBack, onPreviewRoute, onOpenProfile 
   const [published, setPublished] = useState(null);
   const [selectedGame, setSelectedGame] = useState(null);
   const [routes, setRoutes] = useState(null);
+  const [query, setQuery] = useState("");
 
   useEffect(() => {
     db.listPublicGames().then(setPublished);
@@ -85,11 +86,27 @@ export default function Explore({ userId, onBack, onPreviewRoute, onOpenProfile 
     );
   }
 
+  const filtered = published?.filter((g) => g.name.toLowerCase().includes(query.trim().toLowerCase())) ?? null;
+
   return (
     <div className="pn-view">
       <BackHead onBack={onBack} eyebrow="Explore" title="Discover" />
 
-      <label className="pn-label" style={{ marginTop: 0 }}>Published guides</label>
+      {published != null && published.length > 0 && (
+        <div className="pn-search-field">
+          <input
+            className="pn-input"
+            placeholder="Search published games…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+          {query && (
+            <button className="pn-search-clear" onClick={() => setQuery("")} aria-label="Clear search">✕</button>
+          )}
+        </div>
+      )}
+
+      <label className="pn-label" style={published == null || published.length === 0 ? { marginTop: 0 } : undefined}>Published guides</label>
       <div className="pn-hint" style={{ marginBottom: 14 }}>Every game with at least one public guide.</div>
       {published == null ? (
         <div className="pn-empty">Loading…</div>
@@ -98,9 +115,11 @@ export default function Explore({ userId, onBack, onPreviewRoute, onOpenProfile 
           <div className="pn-empty-hero-title">Nothing published yet</div>
           Publish a route from its detail page and it'll show up here for anyone to run.
         </div>
+      ) : filtered.length === 0 ? (
+        <div className="pn-empty">No published games match "{query}".</div>
       ) : (
         <div className="pn-explore-grid pn-stagger">
-          {published.map((g) => (
+          {filtered.map((g) => (
             <div className="pn-explore-tile" key={g.id} onClick={() => setSelectedGame({ id: g.id, steam_appid: g.steam_appid, name: g.name, image: g.header_image })}>
               {g.header_image ? (
                 <div className="pn-explore-tile-image" style={{ backgroundImage: `url(${g.header_image})` }} />

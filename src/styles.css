@@ -371,6 +371,14 @@ button, input, textarea, select { font-family: inherit; }
 .pn-input-mono { font-family: 'JetBrains Mono', monospace; }
 .pn-textarea { resize: vertical; margin-top: 6px; line-height: 1.5; }
 .pn-inline-form { display: flex; gap: 8px; margin-top: 4px; }
+.pn-search-field { position: relative; margin-bottom: 20px; }
+.pn-search-field .pn-input { padding-right: 34px; }
+.pn-search-clear {
+  position: absolute; top: 50%; right: 8px; transform: translateY(-50%);
+  background: none; border: none; color: var(--ink-dimmer); font-size: 12px; cursor: pointer; padding: 6px;
+  transition: color var(--dur-fast) var(--ease-out);
+}
+.pn-search-clear:hover { color: var(--ink); }
 
 .pn-game-search { position: relative; }
 .pn-game-search-dropdown {
