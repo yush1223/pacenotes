@@ -34,6 +34,7 @@ export default function GameDetail({ game, routes, userId, onBack, onOpenRoute, 
   return (
     <div className="pn-view">
       <BackHead onBack={onBack} eyebrow="Game" title={game.name} />
+      {game.header_image && <div className="pn-explore-banner" style={{ backgroundImage: `url(${game.header_image})` }} />}
       {routes.length === 0 && <div className="pn-empty">No routes yet for {game.name}.</div>}
 
       <div className="pn-tile-grid pn-stagger">

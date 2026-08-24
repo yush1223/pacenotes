@@ -185,6 +185,57 @@ async function upsertPBIfBetter(routeId, userId, totalMs, splits) {
   return isNewPB;
 }
 
+// ---------- practice (segment drilling) ----------
+// Deliberately separate from runs/personal_bests: practice reps are scratch
+// data for improving one segment at a time, never a route-wide timed
+// attempt, so they never touch the PB table. The fastest rep per segment
+// is surfaced to the UI as a *suggested* target, not a record.
+
+export async function logPracticeSplit(routeId, userId, segmentId, durationMs) {
+  const { data, error } = await supabase
+    .from("practice_splits")
+    .insert({ route_id: routeId, user_id: userId, segment_id: segmentId, duration_ms: Math.round(durationMs) })
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function deletePracticeSplit(id) {
+  const { error } = await supabase.from("practice_splits").delete().eq("id", id);
+  if (error) throw error;
+}
+
+// Recent reps for one segment, newest first — this session's working log.
+export async function listPracticeSplits(routeId, userId, segmentId, limit = 20) {
+  const { data, error } = await supabase
+    .from("practice_splits")
+    .select("*")
+    .eq("route_id", routeId)
+    .eq("user_id", userId)
+    .eq("segment_id", segmentId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return data || [];
+}
+
+// Best (fastest) practice rep per segment for this route — the map the UI
+// reads to show "suggested target" hints, in the roadbook and the editor.
+export async function getPracticeBests(routeId, userId) {
+  const { data, error } = await supabase
+    .from("practice_splits")
+    .select("segment_id, duration_ms")
+    .eq("route_id", routeId)
+    .eq("user_id", userId);
+  if (error) throw error;
+  const best = {};
+  for (const row of data || []) {
+    if (best[row.segment_id] == null || row.duration_ms < best[row.segment_id]) best[row.segment_id] = row.duration_ms;
+  }
+  return best;
+}
+
 // ---------- runs ----------
 
 export async function listRuns(routeId, userId, limit = 25) {

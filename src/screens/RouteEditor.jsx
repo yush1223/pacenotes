@@ -11,6 +11,7 @@ export default function RouteEditor({ gameId, initial, userId, onCancel, onSave 
   const [targetStr, setTargetStr] = useState(initial?.target_ms != null ? fmt(initial.target_ms, false) : "");
   const [useTarget, setUseTarget] = useState(initial?.use_target !== false);
   const [pb, setPb] = useState(null);
+  const [practiceBests, setPracticeBests] = useState({});
   const [segments, setSegments] = useState(
     initial?.segments?.length
       ? initial.segments.map((s) => ({ ...s, targetStr: s.target_ms != null ? fmt(s.target_ms, false) : "" }))
@@ -22,6 +23,7 @@ export default function RouteEditor({ gameId, initial, userId, onCancel, onSave 
   useEffect(() => {
     if (!initial?.id) return;
     db.getPB(initial.id, userId).then(setPb);
+    db.getPracticeBests(initial.id, userId).then(setPracticeBests);
   }, [initial?.id, userId]);
   const pbBySegId = {};
   if (pb) initial.segments.forEach((s, i) => { pbBySegId[s.id] = toDuration(pb.splits, i); });
@@ -119,6 +121,12 @@ export default function RouteEditor({ gameId, initial, userId, onCancel, onSave 
                   />
                 )}
               </div>
+              {useTarget && practiceBests[s.id] != null && (
+                <div className="pn-hint" style={{ marginTop: -4, marginBottom: 8 }}>
+                  your practice best: <span className="pn-brass-text">{fmt(practiceBests[s.id], false)}</span>{" "}
+                  <button className="pn-author-link" onClick={() => updateSeg(i, "targetStr", fmt(practiceBests[s.id], false))}>use as target</button>
+                </div>
+              )}
               <textarea className="pn-textarea" placeholder={"One step per line…"} rows={3} value={s.notes} onChange={(e) => updateSeg(i, "notes", e.target.value)} />
               <div className="pn-seg-editor-actions">
                 <button className="pn-mini-btn" onClick={() => moveSeg(i, -1)} disabled={i === 0}>↑</button>

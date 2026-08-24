@@ -51,7 +51,7 @@ export default function Library({ games, routesByGame, totalRuns, userId, onOpen
   return (
     <div className="pn-view">
       <div className="pn-masthead">
-        <div className="pn-masthead-mark">PACE NOTES</div>
+        <div className="pn-masthead-mark">PACENOTES</div>
         <div className="pn-masthead-tag">Route notes and a live split timer, for any game.</div>
         <div className="pn-masthead-rule" />
         <div className="pn-masthead-readout">
@@ -85,6 +85,11 @@ export default function Library({ games, routesByGame, totalRuns, userId, onOpen
               >
                 ✕
               </button>
+              {g.header_image ? (
+                <div className="pn-tile-image" style={{ backgroundImage: `url(${g.header_image})` }} />
+              ) : (
+                <div className="pn-tile-image pn-explore-tile-image-empty" />
+              )}
               <div className="pn-tile-idx">{String(i + 1).padStart(2, "0")}</div>
               <div className="pn-tile-title">{g.name}</div>
               <div className="pn-tile-foot">

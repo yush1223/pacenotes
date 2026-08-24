@@ -7,17 +7,19 @@ import BackHead from "../components/BackHead";
 // The stop between "saw it in Explore" and "it's in my library" — nothing
 // is added until you say so. Segments/notes render exactly like the real
 // roadbook, just without PB/target-per-segment (you haven't run it yet).
-export default function RoutePreview({ route, userId, onBack, onAdd, onOpenProfile }) {
+export default function RoutePreview({ route, userId, onBack, onAdd, onRequireAuth, onOpenProfile }) {
   const [busy, setBusy] = useState(false);
   const [alreadyMine, setAlreadyMine] = useState(false);
 
   useEffect(() => {
+    if (!userId) return;
     let live = true;
     db.isInLibrary(route.id, userId).then((v) => { if (live) setAlreadyMine(v); });
     return () => { live = false; };
   }, [route.id, userId]);
 
   const handleAdd = async () => {
+    if (!userId) { onRequireAuth?.(route); return; }
     setBusy(true);
     try {
       await onAdd(route);
@@ -61,7 +63,7 @@ export default function RoutePreview({ route, userId, onBack, onAdd, onOpenProfi
       </div>
 
       <button className="pn-btn pn-btn-primary pn-btn-full" disabled={busy} onClick={handleAdd} style={{ marginBottom: 24 }}>
-        {alreadyMine ? "Open in your library →" : "+ Add to your library"}
+        {!userId ? "Sign in to add to your library" : alreadyMine ? "Open in your library →" : "+ Add to your library"}
       </button>
 
       <label className="pn-label" style={{ marginTop: 0 }}>Roadbook</label>

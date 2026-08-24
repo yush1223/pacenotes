@@ -5,9 +5,10 @@ import BackHead from "../components/BackHead";
 import { useConfirm } from "../components/ConfirmProvider";
 
 // ---------- route detail (roadbook) ----------
-export default function RouteDetail({ routeId, userId, onBack, onEdit, onRemix, onDelete, onStartRun, onHistory, onVisibilityChange, onOpenProfile, flash }) {
+export default function RouteDetail({ routeId, userId, onBack, onEdit, onRemix, onDelete, onStartRun, onPractice, onHistory, onVisibilityChange, onOpenProfile, flash }) {
   const [route, setRoute] = useState(null);
   const [pb, setPb] = useState(null);
+  const [practiceBests, setPracticeBests] = useState({});
   const [publishBusy, setPublishBusy] = useState(false);
   const confirm = useConfirm();
 
@@ -15,6 +16,7 @@ export default function RouteDetail({ routeId, userId, onBack, onEdit, onRemix, 
     (async () => {
       setRoute(await db.getRoute(routeId));
       setPb(await db.getPB(routeId, userId));
+      setPracticeBests(await db.getPracticeBests(routeId, userId));
     })();
   }, [routeId, userId]);
 
@@ -103,6 +105,14 @@ export default function RouteDetail({ routeId, userId, onBack, onEdit, onRemix, 
           </div>
 
           <button className="pn-btn pn-btn-primary pn-btn-full" style={{ marginTop: 14 }} onClick={onStartRun}>▶ Start run</button>
+          <button
+            className="pn-btn pn-btn-ghost pn-btn-full"
+            style={{ marginTop: 8 }}
+            onClick={onPractice}
+            title="Drill one segment at a time — doesn't touch your PB"
+          >
+            Practice a segment
+          </button>
           <div className="pn-btn-row" style={{ marginTop: 8 }}>
             {isOwner ? (
               <button className="pn-btn pn-btn-ghost" onClick={() => onEdit(route)}>Edit</button>
@@ -174,6 +184,7 @@ export default function RouteDetail({ routeId, userId, onBack, onEdit, onRemix, 
           <div className="pn-roadbook pn-stagger">
             {route.segments.map((s, i) => {
               const pbDur = pb ? toDuration(pb.splits, i) : null;
+              const practiceBest = practiceBests[s.id];
               return (
                 <div className="pn-roadbook-row" key={s.id}>
                   <div className="pn-roadbook-scale">
@@ -186,6 +197,7 @@ export default function RouteDetail({ routeId, userId, onBack, onEdit, onRemix, 
                       <div className="pn-roadbook-times">
                         {pbDur != null && <span className="pn-bracket pn-brass-text">pb {fmt(pbDur, false)}</span>}
                         {route.use_target !== false && s.target_ms != null && <span className="pn-bracket">target {fmt(s.target_ms, false)}</span>}
+                        {practiceBest != null && <span className="pn-bracket" title="Your fastest logged practice rep">practice {fmt(practiceBest, false)}</span>}
                       </div>
                     </div>
                     {s.notes && (

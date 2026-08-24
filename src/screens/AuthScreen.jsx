@@ -2,7 +2,7 @@ import { useState } from "react";
 import { signIn, signUp, signInWithGoogle } from "../lib/auth";
 
 // ---------- sign in / sign up ----------
-export default function AuthScreen() {
+export default function AuthScreen({ onBack, message }) {
   const [mode, setMode] = useState("signin"); // "signin" | "signup"
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -51,7 +51,7 @@ export default function AuthScreen() {
     return (
       <div className="pn-auth-shell">
         <div className="pn-auth-box">
-          <div className="pn-masthead-mark" style={{ marginBottom: 18 }}>PACE NOTES</div>
+          <div className="pn-masthead-mark" style={{ marginBottom: 18 }}>PACENOTES</div>
           <div className="pn-empty-hero-title">Check your email</div>
           <div className="pn-hint" style={{ marginTop: 8 }}>
             We sent a confirmation link to <span className="pn-mono">{email}</span>. Follow it, then come back and sign in.
@@ -67,8 +67,9 @@ export default function AuthScreen() {
   return (
     <div className="pn-auth-shell">
       <div className="pn-auth-box">
-        <div className="pn-masthead-mark" style={{ marginBottom: 4 }}>PACE NOTES</div>
-        <div className="pn-masthead-tag" style={{ marginBottom: 22 }}>Route notes and a live split timer, for any game.</div>
+        {onBack && <button className="pn-auth-back" onClick={onBack}>‹ Continue browsing</button>}
+        <div className="pn-masthead-mark" style={{ marginBottom: 4 }}>PACENOTES</div>
+        <div className="pn-masthead-tag" style={{ marginBottom: 22 }}>{message || "Route notes and a live split timer, for any game."}</div>
 
         <button className="pn-google-btn" onClick={submitGoogle} disabled={googleBusy} type="button">
           <svg className="pn-google-icon" viewBox="0 0 18 18" aria-hidden="true">

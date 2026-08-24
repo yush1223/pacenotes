@@ -8,14 +8,19 @@ import GameDetail from "./screens/GameDetail";
 import RouteEditor from "./screens/RouteEditor";
 import RouteDetail from "./screens/RouteDetail";
 import RunScreen from "./screens/RunScreen";
+import PracticeScreen from "./screens/PracticeScreen";
 import HistoryScreen from "./screens/HistoryScreen";
 import Explore from "./screens/Explore";
 import UserProfile from "./screens/UserProfile";
 import RoutePreview from "./screens/RoutePreview";
 
+// Screens that only make sense with an account — browsing (Explore,
+// previewing a route, viewing a profile) never requires one.
+const GUEST_BLOCKED = new Set(["library", "game", "editor", "route", "run", "practice", "history"]);
+
 // ---------- root ----------
 export default function App() {
-  // undefined = still checking for a session, null = signed out.
+  // undefined = still checking for a session, null = signed out (guest).
   const [session, setSession] = useState(undefined);
   const [loading, setLoading] = useState(true);
   const [games, setGames] = useState([]);
@@ -32,6 +37,9 @@ export default function App() {
   const [previewRoute, setPreviewRoute] = useState(null);
   const [previewReturn, setPreviewReturn] = useState("explore");
   const [profileReturn, setProfileReturn] = useState("explore");
+  const [authReturn, setAuthReturn] = useState("explore");
+  const [authMessage, setAuthMessage] = useState(null);
+  const [pendingRoute, setPendingRoute] = useState(null);
 
   const userId = session?.user?.id;
 
@@ -55,18 +63,48 @@ export default function App() {
   }, [userId]);
 
   useEffect(() => {
-    if (!userId) return;
+    if (!userId) {
+      // Signed out (or never signed in) — nothing to load, and nothing
+      // stale from a previous session should linger in the sidebar/UI.
+      setProfile(null);
+      setGames([]);
+      setRoutesByGame({});
+      setTotalRuns(0);
+      setLoading(false);
+      return;
+    }
     (async () => {
       await Promise.all([reloadLibrary(), db.getProfile(userId).then(setProfile)]);
       setLoading(false);
     })();
   }, [userId, reloadLibrary]);
 
+  // Resume whatever a guest was trying to do once they actually sign in:
+  // adding a previewed route to their library, or just landing back on
+  // their (now real) library if they signed in from the sidebar directly.
+  useEffect(() => {
+    if (!userId) return;
+    if (pendingRoute) {
+      const r = pendingRoute;
+      setPendingRoute(null);
+      openPublicRoute(r);
+    } else if (screen === "auth") {
+      setScreen("library");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId]);
+
   const updateUsername = async (newName) => {
     const p = await db.updateUsername(userId, newName);
     setProfile(p);
     flash("Username updated");
     return p;
+  };
+
+  const requireAuth = (fromScreen, message) => {
+    setAuthReturn(fromScreen);
+    setAuthMessage(message || null);
+    setScreen("auth");
   };
 
   // Opening a public guide (from a preview) adds it to your library and
@@ -154,22 +192,6 @@ export default function App() {
     flash("Route deleted");
   };
 
-  const sidebarProps = {
-    games,
-    activeGameId: screen === "library" || screen === "explore" || screen === "profile" || screen === "preview" ? null : gameId,
-    activeSection: screen === "explore" || screen === "profile" || screen === "preview" ? "explore" : "library",
-    totalRuns,
-    onHome: () => setScreen("library"),
-    onExplore: () => setScreen("explore"),
-    onSelectGame: (id) => { setGameId(id); setScreen("game"); },
-    onAddGame: async (name, steamInfo) => { const id = await addGame(name, steamInfo); setGameId(id); setScreen("game"); },
-    onDeleteGame: deleteGame,
-    username: profile?.username,
-    onUpdateUsername: updateUsername,
-    onViewProfile: () => { setProfileTarget({ userId, username: profile?.username }); setScreen("profile"); },
-    onSignOut: signOut,
-  };
-
   if (session === undefined) {
     return (
       <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--bg)", color: "var(--ink-dim)", fontFamily: "'JetBrains Mono', monospace" }}>
@@ -178,8 +200,11 @@ export default function App() {
     );
   }
 
-  if (!session) {
-    return <AuthScreen />;
+  // Full-page takeover for sign in/up, same as before — just reachable
+  // from anywhere now (sidebar, or bounced here trying to publish/save)
+  // instead of gating the whole app.
+  if (screen === "auth" && !session) {
+    return <AuthScreen onBack={() => setScreen(authReturn)} message={authMessage} />;
   }
 
   if (loading) {
@@ -190,11 +215,33 @@ export default function App() {
     );
   }
 
-  const wide = screen === "run" || screen === "route" || screen === "game" || screen === "library" || screen === "explore" || screen === "profile" || screen === "preview";
+  // A guest landing on (or bounced back to) an account-only screen sees
+  // Explore instead — computed at render time so there's never a flash of
+  // the blocked screen while an effect catches up.
+  const effectiveScreen = !session && GUEST_BLOCKED.has(screen) ? "explore" : screen;
+
+  const sidebarProps = {
+    games,
+    activeGameId: effectiveScreen === "library" || effectiveScreen === "explore" || effectiveScreen === "profile" || effectiveScreen === "preview" ? null : gameId,
+    activeSection: !session || effectiveScreen === "explore" || effectiveScreen === "profile" || effectiveScreen === "preview" ? "explore" : "library",
+    totalRuns,
+    onHome: () => (userId ? setScreen("library") : requireAuth("explore", "Sign in to build your library")),
+    onExplore: () => setScreen("explore"),
+    onSelectGame: (id) => { setGameId(id); setScreen("game"); },
+    onAddGame: async (name, steamInfo) => { const id = await addGame(name, steamInfo); setGameId(id); setScreen("game"); },
+    onDeleteGame: deleteGame,
+    username: profile?.username,
+    onUpdateUsername: updateUsername,
+    onViewProfile: () => { setProfileTarget({ userId, username: profile?.username }); setScreen("profile"); },
+    onSignIn: () => requireAuth("explore", "Sign in to Pacenotes"),
+    onSignOut: signOut,
+  };
+
+  const wide = effectiveScreen === "run" || effectiveScreen === "practice" || effectiveScreen === "route" || effectiveScreen === "game" || effectiveScreen === "library" || effectiveScreen === "explore" || effectiveScreen === "profile" || effectiveScreen === "preview";
 
   return (
     <Shell toast={toast} sidebarProps={sidebarProps} wide={wide}>
-      {screen === "library" && (
+      {effectiveScreen === "library" && (
         <Library
           games={games}
           routesByGame={routesByGame}
@@ -206,15 +253,15 @@ export default function App() {
           onExplore={() => setScreen("explore")}
         />
       )}
-      {screen === "explore" && (
+      {effectiveScreen === "explore" && (
         <Explore
           userId={userId}
-          onBack={() => setScreen("library")}
+          onBack={() => setScreen(userId ? "library" : "explore")}
           onPreviewRoute={(r) => previewRouteFrom(r, "explore")}
           onOpenProfile={(target) => openProfile(target, "explore")}
         />
       )}
-      {screen === "profile" && profileTarget && (
+      {effectiveScreen === "profile" && profileTarget && (
         <UserProfile
           userId={profileTarget.userId}
           username={profileTarget.username}
@@ -222,16 +269,17 @@ export default function App() {
           onPreviewRoute={(r) => previewRouteFrom(r, "profile")}
         />
       )}
-      {screen === "preview" && previewRoute && (
+      {effectiveScreen === "preview" && previewRoute && (
         <RoutePreview
           route={previewRoute}
           userId={userId}
           onBack={() => setScreen(previewReturn)}
           onAdd={openPublicRoute}
+          onRequireAuth={(route) => { setPendingRoute(route); requireAuth("preview", `Sign in to add "${route.name}" to your library`); }}
           onOpenProfile={(target) => openProfile(target, "preview")}
         />
       )}
-      {screen === "game" && (
+      {effectiveScreen === "game" && (
         <GameDetail
           game={games.find((g) => g.id === gameId) || { id: gameId, name: "" }}
           routes={routesByGame[gameId] || []}
@@ -241,7 +289,7 @@ export default function App() {
           onNewRoute={() => { setEditingRoute(null); setEditorReturn("game"); setScreen("editor"); }}
         />
       )}
-      {screen === "editor" && (
+      {effectiveScreen === "editor" && (
         <RouteEditor
           gameId={gameId}
           initial={editingRoute}
@@ -250,7 +298,7 @@ export default function App() {
           onSave={async (route) => { const saved = await saveRoute(route); setRouteId(saved.id); setScreen("route"); }}
         />
       )}
-      {screen === "route" && (
+      {effectiveScreen === "route" && (
         <RouteDetail
           routeId={routeId}
           userId={userId}
@@ -259,13 +307,14 @@ export default function App() {
           onRemix={startRemix}
           onDelete={async (route) => { await deleteRoute(route); setScreen("game"); }}
           onStartRun={() => setScreen("run")}
+          onPractice={() => setScreen("practice")}
           onHistory={() => setScreen("history")}
           onVisibilityChange={reloadLibrary}
           onOpenProfile={(target) => openProfile(target, "route")}
           flash={flash}
         />
       )}
-      {screen === "run" && (
+      {effectiveScreen === "run" && (
         <RunScreen
           routeId={routeId}
           userId={userId}
@@ -273,7 +322,10 @@ export default function App() {
           onFinished={() => { setTotalRuns((n) => n + 1); flash("Run saved"); }}
         />
       )}
-      {screen === "history" && <HistoryScreen routeId={routeId} userId={userId} onBack={() => setScreen("route")} />}
+      {effectiveScreen === "practice" && (
+        <PracticeScreen routeId={routeId} userId={userId} onExit={() => setScreen("route")} />
+      )}
+      {effectiveScreen === "history" && <HistoryScreen routeId={routeId} userId={userId} onBack={() => setScreen("route")} />}
     </Shell>
   );
 }

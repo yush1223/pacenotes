@@ -6,7 +6,7 @@ import GameSearchField from "./GameSearchField";
 // Library and Explore are deliberately two real tabs, not one nav item
 // buried in a list next to the other — different content, different
 // purpose (yours vs. everyone's).
-export default function Sidebar({ games, activeGameId, activeSection, totalRuns, onHome, onExplore, onSelectGame, onAddGame, onDeleteGame, username, onUpdateUsername, onViewProfile, onSignOut }) {
+export default function Sidebar({ games, activeGameId, activeSection, totalRuns, onHome, onExplore, onSelectGame, onAddGame, onDeleteGame, username, onUpdateUsername, onViewProfile, onSignIn, onSignOut }) {
   const [adding, setAdding] = useState(false);
   const [customMode, setCustomMode] = useState(false);
   const [name, setName] = useState("");
@@ -45,7 +45,7 @@ export default function Sidebar({ games, activeGameId, activeSection, totalRuns,
   return (
     <div className="pn-sidebar">
       <button className="pn-sidebar-brand" onClick={onHome}>
-        <span className="pn-sidebar-brand-mark">PACE NOTES</span>
+        <span className="pn-sidebar-brand-mark">PACENOTES</span>
       </button>
       <div className="pn-sidebar-rule" />
 
@@ -155,6 +155,14 @@ export default function Sidebar({ games, activeGameId, activeSection, totalRuns,
               </div>
             )}
             {!editingName && <button className="pn-sidebar-signout" onClick={onSignOut}>sign out</button>}
+          </div>
+        )}
+        {!username && onSignIn && (
+          <div className="pn-sidebar-account">
+            <div className="pn-sidebar-account-main">
+              <div className="pn-hint" style={{ marginBottom: 6 }}>Browsing as a guest</div>
+              <button className="pn-btn pn-btn-ghost pn-btn-full" style={{ padding: "6px 8px", fontSize: 11 }} onClick={onSignIn}>Sign in</button>
+            </div>
           </div>
         )}
       </div>

@@ -1,27 +1,22 @@
 import { useState, useEffect } from "react";
 import * as db from "../lib/db";
-import { fetchSteamPopular } from "../lib/steam";
 import { fmt } from "../lib/time";
 import BackHead from "../components/BackHead";
 
 // ---------- explore public guides ----------
-// A genuinely separate space from "my library": a visual, Steam-flavored
-// browse experience. Nothing here is yours until you open a route and it
-// gets added to your library.
+// A genuinely separate space from "my library": a visual browse
+// experience. Nothing here is yours until you preview a route and
+// explicitly add it. "Popular on Steam" is deliberately left out for now
+// — with only a handful of guides published so far, a grid full of "no
+// guides yet" tiles undersold the app rather than inviting exploration.
+// It's easy to bring back once there's enough published content to fill
+// it out; see fetchSteamPopular() in lib/steam.js.
 export default function Explore({ userId, onBack, onPreviewRoute, onOpenProfile }) {
-  const [popular, setPopular] = useState(null);
   const [published, setPublished] = useState(null);
   const [selectedGame, setSelectedGame] = useState(null);
   const [routes, setRoutes] = useState(null);
 
   useEffect(() => {
-    // Steam's featured-categories response occasionally repeats an appid
-    // across sections (e.g. both top-sellers and new-releases) — dedupe so
-    // React keys stay unique and the grid doesn't show the same game twice.
-    fetchSteamPopular().then((items) => {
-      const seen = new Set();
-      setPopular((items || []).filter((p) => (seen.has(p.appid) ? false : (seen.add(p.appid), true))));
-    });
     db.listPublicGames().then(setPublished);
   }, []);
 
@@ -89,42 +84,12 @@ export default function Explore({ userId, onBack, onPreviewRoute, onOpenProfile 
     );
   }
 
-  const publishedByAppid = {};
-  for (const g of published || []) if (g.steam_appid) publishedByAppid[g.steam_appid] = g;
-
   return (
     <div className="pn-view">
       <BackHead onBack={onBack} eyebrow="Explore" title="Discover" />
 
-      <label className="pn-label" style={{ marginTop: 0 }}>Popular on Steam</label>
-      <div className="pn-hint" style={{ marginBottom: 14 }}>Browse by game — pick one to see published guides, or be the first to write one.</div>
-      {popular == null ? (
-        <div className="pn-empty">Loading…</div>
-      ) : (
-        <div className="pn-explore-grid pn-stagger">
-          {popular.map((p) => {
-            const count = publishedByAppid[p.appid]?.routeCount ?? 0;
-            return (
-              <div
-                className="pn-explore-tile"
-                key={p.appid}
-                onClick={() => setSelectedGame({ steam_appid: p.appid, name: p.name, image: p.image })}
-              >
-                <div className="pn-explore-tile-image" style={{ backgroundImage: `url(${p.image})` }} />
-                <div className="pn-explore-tile-body">
-                  <div className="pn-explore-tile-name">{p.name}</div>
-                  <div className={"pn-explore-tile-count" + (count > 0 ? " pn-brass-text" : " pn-ink-dim")}>
-                    {count > 0 ? `${count} guide${count === 1 ? "" : "s"}` : "no guides yet"}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      <label className="pn-label" style={{ marginTop: 28 }}>Published guides</label>
-      <div className="pn-hint" style={{ marginBottom: 14 }}>Every game with at least one public guide, Steam-popular or not.</div>
+      <label className="pn-label" style={{ marginTop: 0 }}>Published guides</label>
+      <div className="pn-hint" style={{ marginBottom: 14 }}>Every game with at least one public guide.</div>
       {published == null ? (
         <div className="pn-empty">Loading…</div>
       ) : published.length === 0 ? (
