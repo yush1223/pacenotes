@@ -12,7 +12,6 @@ export default function Sidebar({ games, activeGameId, totalRuns, onHome, onSele
   return (
     <div className="pn-sidebar">
       <button className="pn-sidebar-brand" onClick={onHome}>
-        <span className="pn-sidebar-brand-dot" />
         <span className="pn-sidebar-brand-mark">PACE NOTES</span>
       </button>
       <div className="pn-sidebar-rule" />

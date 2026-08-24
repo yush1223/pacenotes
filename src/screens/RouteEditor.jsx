@@ -8,11 +8,13 @@ export default function RouteEditor({ gameId, initial, onCancel, onSave }) {
   const [name, setName] = useState(initial?.name || "");
   const [targetStr, setTargetStr] = useState(initial?.target != null ? fmt(initial.target, false) : "");
   const [segments, setSegments] = useState(
-    initial?.segments?.length ? initial.segments.map((s) => ({ ...s })) : [{ id: uid(), title: "", notes: "" }]
+    initial?.segments?.length
+      ? initial.segments.map((s, i) => ({ ...s, goldStr: initial.gold?.[i] != null ? fmt(initial.gold[i], false) : "" }))
+      : [{ id: uid(), title: "", notes: "", goldStr: "" }]
   );
 
   const updateSeg = (idx, field, val) => setSegments((segs) => segs.map((s, i) => (i === idx ? { ...s, [field]: val } : s)));
-  const addSeg = () => setSegments((segs) => [...segs, { id: uid(), title: "", notes: "" }]);
+  const addSeg = () => setSegments((segs) => [...segs, { id: uid(), title: "", notes: "", goldStr: "" }]);
   const removeSeg = (idx) => setSegments((segs) => segs.filter((_, i) => i !== idx));
   const moveSeg = (idx, dir) => setSegments((segs) => {
     const next = [...segs];
@@ -25,7 +27,8 @@ export default function RouteEditor({ gameId, initial, onCancel, onSave }) {
   const canSave = name.trim() && segments.some((s) => s.title.trim());
 
   const handleSave = () => {
-    const cleanSegs = segments.filter((s) => s.title.trim()).map((s) => ({ id: s.id, title: s.title.trim(), notes: s.notes || "" }));
+    const kept = segments.filter((s) => s.title.trim());
+    const cleanSegs = kept.map((s) => ({ id: s.id, title: s.title.trim(), notes: s.notes || "" }));
     onSave({
       id: initial?.id || uid(),
       gameId,
@@ -33,7 +36,7 @@ export default function RouteEditor({ gameId, initial, onCancel, onSave }) {
       target: parseTargetInput(targetStr),
       segments: cleanSegs,
       pb: initial?.pb || null,
-      gold: initial?.gold || cleanSegs.map(() => null),
+      gold: kept.map((s) => parseTargetInput(s.goldStr)),
     });
   };
 
@@ -51,7 +54,16 @@ export default function RouteEditor({ gameId, initial, onCancel, onSave }) {
           <div className="pn-seg-editor-card" key={s.id}>
             <div className="pn-seg-editor-tab">{String(i + 1).padStart(2, "0")}</div>
             <div className="pn-seg-editor-body">
-              <input className="pn-input" placeholder="Segment title" value={s.title} onChange={(e) => updateSeg(i, "title", e.target.value)} />
+              <div className="pn-seg-editor-toprow">
+                <input className="pn-input" placeholder="Segment title" value={s.title} onChange={(e) => updateSeg(i, "title", e.target.value)} />
+                <input
+                  className="pn-input pn-input-mono pn-seg-editor-gold"
+                  placeholder="gold"
+                  title="Gold split time for this segment (mm:ss)"
+                  value={s.goldStr}
+                  onChange={(e) => updateSeg(i, "goldStr", e.target.value)}
+                />
+              </div>
               <textarea className="pn-textarea" placeholder={"One step per line…"} rows={3} value={s.notes} onChange={(e) => updateSeg(i, "notes", e.target.value)} />
               <div className="pn-seg-editor-actions">
                 <button className="pn-mini-btn" onClick={() => moveSeg(i, -1)} disabled={i === 0}>↑</button>
