@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { signIn, signUp } from "../lib/auth";
+import { signIn, signUp, signInWithGoogle } from "../lib/auth";
 
 // ---------- sign in / sign up ----------
 export default function AuthScreen() {
@@ -9,6 +9,19 @@ export default function AuthScreen() {
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
   const [checkEmail, setCheckEmail] = useState(false);
+  const [googleBusy, setGoogleBusy] = useState(false);
+
+  const submitGoogle = async () => {
+    setError(null);
+    setGoogleBusy(true);
+    const { error: err } = await signInWithGoogle();
+    if (err) {
+      setError(err.message || "Couldn't start Google sign-in.");
+      setGoogleBusy(false);
+    }
+    // On success the browser redirects away to Google, then back — no
+    // further local state to set here.
+  };
 
   const submit = async (e) => {
     e.preventDefault();
@@ -56,6 +69,11 @@ export default function AuthScreen() {
       <div className="pn-auth-box">
         <div className="pn-masthead-mark" style={{ marginBottom: 4 }}>PACE NOTES</div>
         <div className="pn-masthead-tag" style={{ marginBottom: 22 }}>Route notes and a live split timer, for any game.</div>
+
+        <button className="pn-btn pn-btn-ghost pn-btn-full pn-auth-google" onClick={submitGoogle} disabled={googleBusy} type="button">
+          {googleBusy ? "…" : "Continue with Google"}
+        </button>
+        <div className="pn-auth-divider"><span>or</span></div>
 
         <form onSubmit={submit}>
           <label className="pn-label" style={{ marginTop: 0 }}>Email</label>

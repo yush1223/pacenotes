@@ -66,6 +66,9 @@ button, input, textarea, select { font-family: inherit; }
 .pn-auth-error { font-size: 12px; color: var(--bad); margin-top: 12px; line-height: 1.5; }
 .pn-auth-switch { display: block; width: 100%; text-align: center; background: none; border: none; color: var(--ink-dim); font-family: 'JetBrains Mono', monospace; font-size: 12px; margin-top: 18px; padding: 4px; cursor: pointer; }
 .pn-auth-switch:hover { color: var(--ink); }
+.pn-auth-google { margin-bottom: 16px; }
+.pn-auth-divider { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; color: var(--ink-dimmer); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.08em; }
+.pn-auth-divider::before, .pn-auth-divider::after { content: ""; flex: 1; height: 1px; background: var(--hairline); }
 
 .pn-sidebar {
   width: var(--sidebar-w);
