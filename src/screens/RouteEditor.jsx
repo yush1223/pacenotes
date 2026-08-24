@@ -115,7 +115,10 @@ export default function RouteEditor({ gameId, initial, onCancel, onSave }) {
       </div>
 
       <button className="pn-btn pn-btn-ghost pn-btn-full" onClick={addSeg}>+ Add segment</button>
-      <div className="pn-btn-row" style={{ marginTop: 18 }}>
+
+      {/* Sticky, not buried at the end of a long segment list — the whole
+          point of this bar is that you shouldn't have to go looking for it. */}
+      <div className="pn-btn-row pn-editor-actions" style={{ marginTop: 18 }}>
         <button className="pn-btn pn-btn-ghost" onClick={onCancel}>Cancel</button>
         <button className="pn-btn pn-btn-primary" disabled={!canSave} onClick={handleSave}>Save route</button>
       </div>
