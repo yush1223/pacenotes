@@ -29,7 +29,7 @@ export default function RoutePreview({ route, userId, onBack, onAdd, onRequireAu
   };
 
   return (
-    <div className="pn-view">
+    <div className="pn-view pn-public-wash">
       <BackHead onBack={onBack} eyebrow="Preview" title={route.name} accent="public" />
       <div className="pn-hint" style={{ marginBottom: 4 }}>
         by{" "}

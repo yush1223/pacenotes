@@ -33,7 +33,7 @@ export default function Explore({ userId, onBack, onPreviewRoute, onOpenProfile 
 
   if (selectedGame) {
     return (
-      <div className="pn-view">
+      <div className="pn-view pn-public-wash">
         <BackHead onBack={() => setSelectedGame(null)} eyebrow="Explore" title={selectedGame.name} accent="public" />
         <GameBanner steamAppid={selectedGame.steam_appid} thumb={selectedGame.image} className="pn-explore-banner" />
         {routes == null ? (
@@ -46,7 +46,7 @@ export default function Explore({ userId, onBack, onPreviewRoute, onOpenProfile 
         ) : (
           <div className="pn-tile-grid pn-stagger">
             {routes.map((r, i) => (
-              <div className="pn-tile" key={r.id} onClick={() => onPreviewRoute(r)}>
+              <div className="pn-tile pn-tile-public" key={r.id} onClick={() => onPreviewRoute(r)}>
                 <div className="pn-tile-idx">{String(i + 1).padStart(2, "0")}</div>
                 <div className="pn-tile-title">{r.name}</div>
                 <div className="pn-hint" style={{ marginBottom: 10 }}>
@@ -89,7 +89,7 @@ export default function Explore({ userId, onBack, onPreviewRoute, onOpenProfile 
   const filtered = published?.filter((g) => g.name.toLowerCase().includes(query.trim().toLowerCase())) ?? null;
 
   return (
-    <div className="pn-view">
+    <div className="pn-view pn-public-wash">
       <BackHead onBack={onBack} eyebrow="Explore" title="Discover" accent="public" />
 
       {published != null && published.length > 0 && (
@@ -121,14 +121,16 @@ export default function Explore({ userId, onBack, onPreviewRoute, onOpenProfile 
         <div className="pn-explore-grid pn-stagger">
           {filtered.map((g) => (
             <div className="pn-explore-tile" key={g.id} onClick={() => setSelectedGame({ id: g.id, steam_appid: g.steam_appid, name: g.name, image: g.header_image })}>
-              {g.header_image ? (
-                <div className="pn-explore-tile-image" style={{ backgroundImage: `url(${g.header_image})` }} />
-              ) : (
-                <div className="pn-explore-tile-image pn-explore-tile-image-empty" />
-              )}
+              <div className="pn-explore-tile-media">
+                {g.header_image ? (
+                  <div className="pn-explore-tile-image" style={{ backgroundImage: `url(${g.header_image})` }} />
+                ) : (
+                  <div className="pn-explore-tile-image pn-explore-tile-image-empty" />
+                )}
+                <span className="pn-explore-tile-badge">{g.routeCount} guide{g.routeCount === 1 ? "" : "s"}</span>
+              </div>
               <div className="pn-explore-tile-body">
                 <div className="pn-explore-tile-name">{g.name}</div>
-                <div className="pn-explore-tile-count">{g.routeCount} guide{g.routeCount === 1 ? "" : "s"}</div>
               </div>
             </div>
           ))}

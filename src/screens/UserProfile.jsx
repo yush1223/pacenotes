@@ -15,7 +15,7 @@ export default function UserProfile({ userId, username, onBack, onPreviewRoute }
   }, [userId]);
 
   return (
-    <div className="pn-view">
+    <div className="pn-view pn-public-wash">
       <BackHead onBack={onBack} eyebrow="Profile" title={username || "…"} accent="public" />
 
       {routes == null ? (

@@ -12,6 +12,7 @@ export default function Library({ games, routesByGame, totalRuns, userId, onOpen
   const [name, setName] = useState("");
   const [steamPick, setSteamPick] = useState(null);
   const [gameStats, setGameStats] = useState({});
+  const [query, setQuery] = useState("");
   const confirm = useConfirm();
 
   const resetAddForm = () => { setAdding(false); setCustomMode(false); setName(""); setSteamPick(null); };
@@ -39,6 +40,8 @@ export default function Library({ games, routesByGame, totalRuns, userId, onOpen
     })();
   }, [games, routesByGame, userId]);
 
+  const filteredGames = games.filter((g) => g.name.toLowerCase().includes(query.trim().toLowerCase()));
+
   const submitAdd = () => {
     if (customMode) {
       if (name.trim()) { onAddGame(name.trim(), { custom: true }); resetAddForm(); }
@@ -63,6 +66,20 @@ export default function Library({ games, routesByGame, totalRuns, userId, onOpen
         Explore public guides →
       </button>
 
+      {games.length > 0 && (
+        <div className="pn-search-field">
+          <input
+            className="pn-input"
+            placeholder="Search your library…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+          {query && (
+            <button className="pn-search-clear" onClick={() => setQuery("")} aria-label="Clear search">✕</button>
+          )}
+        </div>
+      )}
+
       {games.length === 0 && !adding && (
         <div className="pn-empty-hero">
           <div className="pn-empty-hero-title">No games yet</div>
@@ -73,8 +90,12 @@ export default function Library({ games, routesByGame, totalRuns, userId, onOpen
         </div>
       )}
 
+      {games.length > 0 && filteredGames.length === 0 && (
+        <div className="pn-empty">No games in your library match "{query}".</div>
+      )}
+
       <div className="pn-tile-grid pn-stagger">
-        {games.map((g, i) => {
+        {filteredGames.map((g, i) => {
           const st = gameStats[g.id] || {};
           return (
             <div className="pn-tile" key={g.id} onClick={() => onOpenGame(g.id)}>

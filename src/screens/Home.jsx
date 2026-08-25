@@ -17,7 +17,7 @@ export default function Home({ onExplore, onSignIn }) {
   const guideCount = published ? published.reduce((sum, g) => sum + g.routeCount, 0) : 0;
 
   return (
-    <div className="pn-view">
+    <div className="pn-view pn-public-wash">
       <div className="pn-masthead">
         <div className="pn-masthead-mark">PACENOTES</div>
         <div className="pn-masthead-tag">Route notes and a live split timer, for any game.</div>
@@ -48,14 +48,16 @@ export default function Home({ onExplore, onSignIn }) {
           <div className="pn-explore-grid pn-stagger">
             {published.slice(0, 6).map((g) => (
               <div className="pn-explore-tile" key={g.id} onClick={onExplore}>
-                {g.header_image ? (
-                  <div className="pn-explore-tile-image" style={{ backgroundImage: `url(${g.header_image})` }} />
-                ) : (
-                  <div className="pn-explore-tile-image pn-explore-tile-image-empty" />
-                )}
+                <div className="pn-explore-tile-media">
+                  {g.header_image ? (
+                    <div className="pn-explore-tile-image" style={{ backgroundImage: `url(${g.header_image})` }} />
+                  ) : (
+                    <div className="pn-explore-tile-image pn-explore-tile-image-empty" />
+                  )}
+                  <span className="pn-explore-tile-badge">{g.routeCount} guide{g.routeCount === 1 ? "" : "s"}</span>
+                </div>
                 <div className="pn-explore-tile-body">
                   <div className="pn-explore-tile-name">{g.name}</div>
-                  <div className="pn-explore-tile-count">{g.routeCount} guide{g.routeCount === 1 ? "" : "s"}</div>
                 </div>
               </div>
             ))}
