@@ -146,7 +146,7 @@ export default function RouteDetail({ routeId, userId, onBack, onEdit, onRemix, 
                   <>
                     <div className="pn-publish-status">
                       <span className={"pn-publish-dot" + (route.visibility === "public" ? " pn-publish-dot-live" : "")} />
-                      <span className={route.visibility === "public" ? "pn-brass-text" : "pn-publish-status-text"}>
+                      <span className={route.visibility === "public" ? "pn-public-text" : "pn-publish-status-text"}>
                         {route.visibility === "public" ? "Published — live in Explore" : "Private — only you"}
                       </span>
                     </div>

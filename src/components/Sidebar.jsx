@@ -51,7 +51,7 @@ export default function Sidebar({ games, activeGameId, activeSection, totalRuns,
 
       <div className="pn-sidebar-tabs">
         <button className={"pn-sidebar-tab" + (activeSection === "library" ? " pn-sidebar-tab-active" : "")} onClick={onLibraryTab}>Library</button>
-        <button className={"pn-sidebar-tab" + (activeSection === "explore" ? " pn-sidebar-tab-active" : "")} onClick={onExplore}>Explore</button>
+        <button className={"pn-sidebar-tab" + (activeSection === "explore" ? " pn-sidebar-tab-active pn-sidebar-tab-active-public" : "")} onClick={onExplore}>Explore</button>
       </div>
 
       {activeSection !== "library" ? (

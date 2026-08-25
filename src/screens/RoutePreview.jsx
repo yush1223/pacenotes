@@ -30,7 +30,7 @@ export default function RoutePreview({ route, userId, onBack, onAdd, onRequireAu
 
   return (
     <div className="pn-view">
-      <BackHead onBack={onBack} eyebrow="Preview" title={route.name} />
+      <BackHead onBack={onBack} eyebrow="Preview" title={route.name} accent="public" />
       <div className="pn-hint" style={{ marginBottom: 4 }}>
         by{" "}
         {route.profiles?.username && onOpenProfile ? (

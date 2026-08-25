@@ -55,7 +55,7 @@ export default function Home({ onExplore, onSignIn }) {
                 )}
                 <div className="pn-explore-tile-body">
                   <div className="pn-explore-tile-name">{g.name}</div>
-                  <div className="pn-explore-tile-count pn-brass-text">{g.routeCount} guide{g.routeCount === 1 ? "" : "s"}</div>
+                  <div className="pn-explore-tile-count">{g.routeCount} guide{g.routeCount === 1 ? "" : "s"}</div>
                 </div>
               </div>
             ))}

@@ -34,7 +34,7 @@ export default function Explore({ userId, onBack, onPreviewRoute, onOpenProfile 
   if (selectedGame) {
     return (
       <div className="pn-view">
-        <BackHead onBack={() => setSelectedGame(null)} eyebrow="Explore" title={selectedGame.name} />
+        <BackHead onBack={() => setSelectedGame(null)} eyebrow="Explore" title={selectedGame.name} accent="public" />
         <GameBanner steamAppid={selectedGame.steam_appid} thumb={selectedGame.image} className="pn-explore-banner" />
         {routes == null ? (
           <div className="pn-empty">Loading…</div>
@@ -90,7 +90,7 @@ export default function Explore({ userId, onBack, onPreviewRoute, onOpenProfile 
 
   return (
     <div className="pn-view">
-      <BackHead onBack={onBack} eyebrow="Explore" title="Discover" />
+      <BackHead onBack={onBack} eyebrow="Explore" title="Discover" accent="public" />
 
       {published != null && published.length > 0 && (
         <div className="pn-search-field">
@@ -128,7 +128,7 @@ export default function Explore({ userId, onBack, onPreviewRoute, onOpenProfile 
               )}
               <div className="pn-explore-tile-body">
                 <div className="pn-explore-tile-name">{g.name}</div>
-                <div className="pn-explore-tile-count pn-brass-text">{g.routeCount} guide{g.routeCount === 1 ? "" : "s"}</div>
+                <div className="pn-explore-tile-count">{g.routeCount} guide{g.routeCount === 1 ? "" : "s"}</div>
               </div>
             </div>
           ))}
