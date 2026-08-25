@@ -31,6 +31,7 @@ export default function RoutePreview({ route, userId, onBack, onAdd, onRequireAu
   return (
     <div className="pn-view pn-public-wash">
       <BackHead onBack={onBack} eyebrow="Preview" title={route.name} accent="public" />
+      <div className="pn-mode-strip"><span className="pn-mode-strip-dot" />Public space — nothing added until you say so</div>
       <div className="pn-hint" style={{ marginBottom: 4 }}>
         by{" "}
         {route.profiles?.username && onOpenProfile ? (

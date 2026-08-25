@@ -17,6 +17,7 @@ export default function UserProfile({ userId, username, onBack, onPreviewRoute }
   return (
     <div className="pn-view pn-public-wash">
       <BackHead onBack={onBack} eyebrow="Profile" title={username || "…"} accent="public" />
+      <div className="pn-mode-strip"><span className="pn-mode-strip-dot" />Public space — everything here is published</div>
 
       {routes == null ? (
         <div className="pn-empty">Loading…</div>

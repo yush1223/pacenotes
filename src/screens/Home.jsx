@@ -54,10 +54,12 @@ export default function Home({ onExplore, onSignIn }) {
                   ) : (
                     <div className="pn-explore-tile-image pn-explore-tile-image-empty" />
                   )}
-                  <span className="pn-explore-tile-badge">{g.routeCount} guide{g.routeCount === 1 ? "" : "s"}</span>
                 </div>
                 <div className="pn-explore-tile-body">
-                  <div className="pn-explore-tile-name">{g.name}</div>
+                  <div className="pn-explore-tile-head">
+                    <div className="pn-explore-tile-name">{g.name}</div>
+                    <span className="pn-explore-tile-count">{g.routeCount} guide{g.routeCount === 1 ? "" : "s"}</span>
+                  </div>
                 </div>
               </div>
             ))}

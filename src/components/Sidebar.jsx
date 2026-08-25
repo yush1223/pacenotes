@@ -43,7 +43,7 @@ export default function Sidebar({ games, activeGameId, activeSection, totalRuns,
   };
 
   return (
-    <div className="pn-sidebar">
+    <div className={"pn-sidebar" + (activeSection !== "library" ? " pn-sidebar-public" : "")}>
       <button className="pn-sidebar-brand" onClick={onHome}>
         <span className="pn-sidebar-brand-mark">PACENOTES</span>
       </button>

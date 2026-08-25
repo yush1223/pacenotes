@@ -370,14 +370,10 @@ button, input, textarea, select { font-family: inherit; }
 .pn-explore-tile-media { position: relative; }
 .pn-explore-tile-image { width: 100%; aspect-ratio: 460 / 215; background-size: cover; background-position: center; background-color: var(--panel-raised); }
 .pn-explore-tile-image-empty { background: repeating-linear-gradient(135deg, var(--panel-raised) 0 8px, var(--panel) 8px 16px); }
-.pn-explore-tile-badge {
-  position: absolute; top: 8px; right: 8px; background: rgba(8, 11, 14, 0.85);
-  color: var(--public); font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 600; letter-spacing: 0.04em;
-  padding: 3px 7px; border: 1px solid var(--public-dim); border-radius: 2px;
-}
 .pn-explore-tile-body { padding: 12px 14px 14px; }
+.pn-explore-tile-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
 .pn-explore-tile-name { font-weight: 600; font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.pn-explore-tile-count { font-family: 'JetBrains Mono', monospace; font-size: 10.5px; margin-top: 4px; color: var(--public); }
+.pn-explore-tile-count { flex-shrink: 0; font-family: 'JetBrains Mono', monospace; font-size: 10.5px; letter-spacing: 0.02em; color: var(--public); }
 .pn-explore-banner { width: 100%; aspect-ratio: 460 / 130; background-size: cover; background-position: center; border-radius: 2px; margin-bottom: 20px; border: 1px solid var(--public-dim); }
 /* Faint ambient wash behind every public-space screen (Explore, Home,
    previews, profiles) -- a signal at the level of "the room you're in,"
@@ -388,6 +384,23 @@ button, input, textarea, select { font-family: inherit; }
 }
 @media (max-width: 980px) {
   .pn-public-wash { margin: -28px -24px 0; padding: 28px 24px 1px; }
+}
+/* Status strip -- a mode light, same idea as .pn-publish-dot, just worn at
+   the top of the room instead of on one route. This is the "you are
+   somewhere else" signal that doesn't depend on noticing a border color. */
+.pn-mode-strip {
+  display: flex; align-items: center; gap: 8px;
+  background: rgba(90, 174, 214, 0.08); border: 1px solid var(--public-dim); border-radius: 2px;
+  padding: 7px 12px; margin-bottom: 22px;
+  font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 600;
+  letter-spacing: 0.1em; text-transform: uppercase; color: var(--public);
+}
+.pn-mode-strip-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--public); box-shadow: 0 0 6px var(--public); flex-shrink: 0; }
+/* The sidebar itself shifts when you're in Explore -- an ambient cue that
+   holds no matter what's scrolled into the content pane. */
+.pn-sidebar-public {
+  background: linear-gradient(180deg, rgba(90, 174, 214, 0.07), transparent 220px), linear-gradient(180deg, rgba(255,255,255,0.012), transparent 140px);
+  border-right-color: var(--public-dim);
 }
 
 /* ---------- labels & inputs ---------- */
