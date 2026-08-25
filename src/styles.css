@@ -196,8 +196,8 @@ button, input, textarea, select { font-family: inherit; }
 .pn-author-link:hover { color: var(--brass); border-bottom-color: var(--brass-dim); }
 
 /* ---------- visual route card (profile / explore drill-in) ---------- */
-.pn-route-card { background: var(--panel); border: 1px solid var(--hairline); border-top: 2px solid var(--public-dim); border-radius: 2px; overflow: hidden; cursor: pointer; transition: border-color var(--dur-base) var(--ease-out), transform var(--dur-base) var(--ease-out); }
-.pn-route-card:hover { border-color: var(--ink-dimmer); border-top-color: var(--public); transform: translateY(-3px); }
+.pn-route-card { background: var(--panel); border: 1px solid var(--public-dim); border-radius: 2px; overflow: hidden; cursor: pointer; transition: border-color var(--dur-base) var(--ease-out), transform var(--dur-base) var(--ease-out); }
+.pn-route-card:hover { border-color: var(--public); transform: translateY(-3px); }
 .pn-route-card-image { width: 100%; aspect-ratio: 460 / 160; background-size: cover; background-position: center; background-color: var(--panel-raised); }
 .pn-route-card-body { padding: 14px 16px 16px; }
 
@@ -349,38 +349,36 @@ button, input, textarea, select { font-family: inherit; }
 .pn-tile-add:hover { border-color: var(--brass-dim); color: var(--brass); }
 .pn-tile-add-plus { font-size: 22px; line-height: 1; }
 /* Public variant of .pn-tile, for a route list reached through Explore
-   rather than your own GameDetail -- rounded, blue-bordered, no bracket
-   corners (that stamped-instrument-plate motif is Library's alone). */
-.pn-tile-public { border-radius: 12px; border-color: var(--public-dim); }
+   rather than your own GameDetail -- square-cornered like every other
+   panel in this app, just blue-bordered and without the bracket-corner
+   hover motif (that stamped-instrument-plate detail is Library's alone). */
+.pn-tile-public { border-color: var(--public-dim); }
 .pn-tile-public:hover { border-color: var(--public); background: var(--panel-raised); }
 .pn-tile-public::before, .pn-tile-public::after { display: none; }
 
 /* ---------- explore: visual, image-forward tiles ---------- */
-/* A genuinely different card language from .pn-tile, not just a recolor:
-   Library's tiles are square-cornered stamped instrument plates (idx
-   numbers, bracket corners, a stats footer row) -- these are rounded,
-   image-led, with the count as a floating badge on the image itself
-   instead of a footer stat row. Two different UI paradigms (instrument
-   panel vs. gallery/storefront), so a grid of these can't be mistaken
-   for a grid of those, whatever the accent color is. */
+/* A different card language from .pn-tile, but still this app's language
+   -- square corners (2px, same as every panel/button here), a stamped
+   square tag for the guide count instead of a footer stat row. Not
+   rounded pills; that reads as generic app chrome, not this app. */
 .pn-explore-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; margin-bottom: 8px; }
 .pn-explore-tile {
-  background: var(--panel); border: 1px solid var(--public-dim); border-radius: 12px; overflow: hidden; cursor: pointer;
-  transition: border-color var(--dur-base) var(--ease-out), transform var(--dur-base) var(--ease-out), box-shadow var(--dur-base) var(--ease-out);
+  background: var(--panel); border: 1px solid var(--public-dim); border-radius: 2px; overflow: hidden; cursor: pointer;
+  transition: border-color var(--dur-base) var(--ease-out), transform var(--dur-base) var(--ease-out);
 }
-.pn-explore-tile:hover { border-color: var(--public); transform: translateY(-3px); box-shadow: 0 8px 24px rgba(90, 174, 214, 0.15); }
+.pn-explore-tile:hover { border-color: var(--public); transform: translateY(-3px); }
 .pn-explore-tile-media { position: relative; }
 .pn-explore-tile-image { width: 100%; aspect-ratio: 460 / 215; background-size: cover; background-position: center; background-color: var(--panel-raised); }
 .pn-explore-tile-image-empty { background: repeating-linear-gradient(135deg, var(--panel-raised) 0 8px, var(--panel) 8px 16px); }
 .pn-explore-tile-badge {
-  position: absolute; top: 8px; right: 8px; background: rgba(8, 11, 14, 0.78); backdrop-filter: blur(3px);
-  color: var(--public); font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 600; letter-spacing: 0.02em;
-  padding: 4px 9px; border-radius: 999px; border: 1px solid var(--public-dim);
+  position: absolute; top: 8px; right: 8px; background: rgba(8, 11, 14, 0.85);
+  color: var(--public); font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 600; letter-spacing: 0.04em;
+  padding: 3px 7px; border: 1px solid var(--public-dim); border-radius: 2px;
 }
 .pn-explore-tile-body { padding: 12px 14px 14px; }
 .pn-explore-tile-name { font-weight: 600; font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pn-explore-tile-count { font-family: 'JetBrains Mono', monospace; font-size: 10.5px; margin-top: 4px; color: var(--public); }
-.pn-explore-banner { width: 100%; aspect-ratio: 460 / 130; background-size: cover; background-position: center; border-radius: 12px; margin-bottom: 20px; border: 1px solid var(--public-dim); }
+.pn-explore-banner { width: 100%; aspect-ratio: 460 / 130; background-size: cover; background-position: center; border-radius: 2px; margin-bottom: 20px; border: 1px solid var(--public-dim); }
 /* Faint ambient wash behind every public-space screen (Explore, Home,
    previews, profiles) -- a signal at the level of "the room you're in,"
    not just the cards inside it. */
