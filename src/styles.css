@@ -110,8 +110,8 @@ button, input, textarea, select { font-family: inherit; }
 
 .pn-sidebar-brand {
   display: flex;
-  align-items: baseline;
-  gap: 8px;
+  align-items: center;
+  gap: 9px;
   padding: 2px 8px 0;
   background: none;
   border: none;
@@ -119,6 +119,7 @@ button, input, textarea, select { font-family: inherit; }
   text-align: left;
   color: var(--ink);
 }
+.pn-sidebar-brand-icon { width: 23px; height: 18px; flex-shrink: 0; }
 .pn-sidebar-brand-mark { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 14.5px; letter-spacing: 0.2em; transition: color var(--dur-base) var(--ease-out); }
 .pn-sidebar-brand:hover .pn-sidebar-brand-mark { color: var(--brass); }
 

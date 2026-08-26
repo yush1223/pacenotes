@@ -45,6 +45,20 @@ export default function Sidebar({ games, activeGameId, activeSection, totalRuns,
   return (
     <div className={"pn-sidebar" + (activeSection !== "library" ? " pn-sidebar-public" : "")}>
       <button className="pn-sidebar-brand" onClick={onHome}>
+        <svg className="pn-sidebar-brand-icon" viewBox="0 0 90 70" fill="none" aria-hidden="true">
+          <rect x="8" y="8" width="32" height="54" rx="4" fill="var(--brass)"/>
+          <rect x="50" y="8" width="32" height="54" rx="4" fill="var(--brass)"/>
+          <circle cx="45" cy="27" r="3" fill="var(--brass)"/>
+          <circle cx="45" cy="43" r="3" fill="var(--brass)"/>
+          <line x1="13" y1="22" x2="35" y2="22" stroke="var(--bg)" strokeWidth="2.4" strokeLinecap="round"/>
+          <line x1="13" y1="31" x2="35" y2="31" stroke="var(--bg)" strokeWidth="2.4" strokeLinecap="round"/>
+          <line x1="13" y1="40" x2="35" y2="40" stroke="var(--bg)" strokeWidth="2.4" strokeLinecap="round"/>
+          <line x1="13" y1="49" x2="35" y2="49" stroke="var(--bg)" strokeWidth="2.4" strokeLinecap="round"/>
+          <line x1="55" y1="22" x2="77" y2="22" stroke="var(--bg)" strokeWidth="2.4" strokeLinecap="round"/>
+          <line x1="55" y1="31" x2="77" y2="31" stroke="var(--bg)" strokeWidth="2.4" strokeLinecap="round"/>
+          <line x1="55" y1="40" x2="77" y2="40" stroke="var(--bg)" strokeWidth="2.4" strokeLinecap="round"/>
+          <line x1="55" y1="49" x2="77" y2="49" stroke="var(--bg)" strokeWidth="2.4" strokeLinecap="round"/>
+        </svg>
         <span className="pn-sidebar-brand-mark">PACENOTES</span>
       </button>
       <div className="pn-sidebar-rule" />
