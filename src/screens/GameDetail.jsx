@@ -36,45 +36,42 @@ export default function GameDetail({ game, routes, userId, onBack, onOpenRoute, 
     <div className="pn-view">
       <BackHead onBack={onBack} eyebrow="Game" title={game.name} />
       <GameBanner steamAppid={game.steam_appid} thumb={game.header_image} className="pn-explore-banner" />
-      {routes.length === 0 && <div className="pn-empty">No routes yet for {game.name}.</div>}
+      {routes.length === 0 && <div className="pn-empty">No routes yet for {game.name}. Start one below.</div>}
 
-      <div className="pn-tile-grid pn-stagger">
-        {routes.map((r, i) => {
+      <h2 className="pn-section-title" style={{ marginTop: 0 }}>Routes</h2>
+      <div className="pn-tile-grid pn-stagger" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 16 }}>
+        {routes.map((r) => {
           const d = details[r.id];
           const sparkVals = d?.runs?.length ? d.runs.slice().reverse().map((x) => x.total_ms) : null;
           const isMine = r.owner_id === userId;
+          const runCount = d?.runs?.length ?? 0;
           return (
-            <div className="pn-tile" key={r.id} onClick={() => onOpenRoute(r.id)}>
-              <div className="pn-tile-idx">{String(i + 1).padStart(2, "0")}</div>
-              <div className="pn-tile-title">{r.name}</div>
-              {!isMine && (
-                <div className="pn-hint" style={{ marginTop: -8, marginBottom: 10 }}>
-                  by {owners[r.owner_id] || "…"}{r.remixed_from_name && " · remix"}
+            <div
+              className="pn-route-tile"
+              key={r.id}
+              role="link"
+              tabIndex={0}
+              onClick={() => onOpenRoute(r.id)}
+              onKeyDown={(e) => { if (e.key === "Enter") onOpenRoute(r.id); }}
+            >
+              <div>
+                <div className="pn-route-tile-title">{r.name}</div>
+                <div className="pn-hint" style={{ marginTop: 2 }}>
+                  {r.segments?.length ?? 0} segments
+                  {!isMine && <> · by {owners[r.owner_id] || "…"}{r.remixed_from_name && " · remix"}</>}
+                  {isMine && r.remixed_from_name && <> · remix of "{r.remixed_from_name}"</>}
                 </div>
-              )}
-              {isMine && r.remixed_from_name && (
-                <div className="pn-hint" style={{ marginTop: -8, marginBottom: 10 }}>
-                  ↻ remix of "{r.remixed_from_name}"
-                </div>
-              )}
+              </div>
               <div className="pn-tile-foot">
-                <div className="pn-instrument-row">
-                  <div className="pn-instrument">
-                    <span className="pn-instrument-label">pb</span>
-                    <span className="pn-mono pn-brass-text">{d?.pb ? fmt(d.pb.total_ms, false) : "—"}</span>
-                  </div>
-                  <div className="pn-instrument-divider" />
-                  <div className="pn-instrument">
-                    <span className="pn-instrument-label">runs</span>
-                    <span className="pn-mono">{d?.runs?.length ?? 0}</span>
-                  </div>
+                <div className="pn-tile-meta">
+                  {d?.pb ? <span className="pn-brass-text">PB {fmt(d.pb.total_ms, false)}</span> : "No PB yet"} · {runCount}{runCount === 8 ? "+" : ""} {runCount === 1 ? "run" : "runs"}
                 </div>
-                <Sparkline values={sparkVals} />
+                {sparkVals && sparkVals.length > 1 && <Sparkline values={sparkVals} />}
               </div>
             </div>
           );
         })}
-        <button className="pn-tile-add" onClick={onNewRoute}>
+        <button className="pn-tile-add pn-route-tile-add" onClick={onNewRoute}>
           <span className="pn-tile-add-plus">+</span>
           New route
         </button>

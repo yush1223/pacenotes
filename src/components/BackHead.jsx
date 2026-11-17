@@ -5,7 +5,7 @@
 export default function BackHead({ onBack, eyebrow, title, accent }) {
   return (
     <div className="pn-view-head">
-      <button className="pn-back" onClick={onBack}>‹ back</button>
+      <button className="pn-back" onClick={onBack}>‹ Back</button>
       <div className={"pn-eyebrow" + (accent === "public" ? " pn-eyebrow-public" : "")}>{eyebrow}</div>
       <div className="pn-h1">{title}</div>
     </div>

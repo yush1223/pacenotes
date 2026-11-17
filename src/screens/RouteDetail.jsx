@@ -67,9 +67,9 @@ export default function RouteDetail({ routeId, userId, onBack, onEdit, onRemix, 
 
   return (
     <div className="pn-view">
-      <BackHead onBack={onBack} eyebrow="Route" title={route.name} />
+      <BackHead onBack={onBack} eyebrow={route.games?.name || "Route"} title={route.name} />
       {route.remixed_from_name && (
-        <div className="pn-hint pn-remix-credit" style={{ marginTop: -10, marginBottom: 16 }}>
+        <div className="pn-remix-credit" style={{ marginTop: -12, marginBottom: 20 }}>
           ↻ Remixed from "{route.remixed_from_name}"
           {route.remix_owner?.username && onOpenProfile ? (
             <>
@@ -89,128 +89,96 @@ export default function RouteDetail({ routeId, userId, onBack, onEdit, onRemix, 
         </div>
       )}
 
-      <div className="pn-split-cols">
-        <div className="pn-split-col-sticky">
-          <div className="pn-gauge-panel" style={{ flexDirection: "column", alignItems: "stretch", gap: 14, padding: "18px 16px" }}>
-            <div className="pn-gauge" style={{ alignItems: "flex-start" }}>
-              <span className="pn-gauge-label">personal best</span>
-              <span className="pn-mono pn-gauge-value pn-brass-text">{pb ? fmt(pb.total_ms, false) : "—"}</span>
-            </div>
-            {route.use_target !== false && route.target_ms != null && (
-              <div className="pn-gauge" style={{ alignItems: "flex-start" }}>
-                <span className="pn-gauge-label">target</span>
-                <span className="pn-mono pn-gauge-value">{fmt(route.target_ms, false)}</span>
-              </div>
-            )}
+      <div className="pn-stat-row">
+        <div className="pn-stat pn-stat-pb">
+          <div className="pn-stat-label">Personal best</div>
+          <div className={"pn-stat-value" + (pb ? "" : " pn-stat-value-empty")}>{pb ? fmt(pb.total_ms, false) : "—"}</div>
+        </div>
+        {route.use_target !== false && route.target_ms != null && (
+          <div className="pn-stat">
+            <div className="pn-stat-label">Target</div>
+            <div className="pn-stat-value">{fmt(route.target_ms, false)}</div>
           </div>
+        )}
+        <div className="pn-stat">
+          <div className="pn-stat-label">Segments</div>
+          <div className="pn-stat-value">{route.segments.length}</div>
+        </div>
+      </div>
 
-          <button className="pn-btn pn-btn-primary pn-btn-full" style={{ marginTop: 14 }} onClick={onStartRun}>▶ Start run</button>
-          <button
-            className="pn-btn pn-btn-ghost pn-btn-full"
-            style={{ marginTop: 8 }}
-            onClick={onPractice}
-            title="Drill one segment at a time — doesn't touch your PB"
-          >
-            Practice a segment
-          </button>
-          <div className="pn-btn-row" style={{ marginTop: 8 }}>
-            {isOwner ? (
-              <button className="pn-btn pn-btn-ghost" onClick={() => onEdit(route)}>Edit</button>
+      <div className="pn-action-row">
+        <button className="pn-btn pn-btn-primary pn-btn-lg" onClick={onStartRun}>Start run</button>
+        <button className="pn-btn pn-btn-ghost" onClick={onPractice} title="Drill one segment at a time — doesn't touch your PB">Practice</button>
+        {isOwner ? (
+          <button className="pn-btn pn-btn-ghost" onClick={() => onEdit(route)}>Edit</button>
+        ) : (
+          onRemix && (
+            <button className="pn-btn pn-btn-ghost" onClick={() => onRemix(route)} title="Make your own editable copy — credit to the original stays attached">
+              Remix
+            </button>
+          )
+        )}
+        <button className="pn-btn pn-btn-ghost" onClick={onHistory}>History</button>
+        {isOwner && (
+          <div className="pn-action-row-end">
+            {route.games?.steam_appid ? (
+              <span className="pn-publish-status">
+                <span className={"pn-publish-dot" + (route.visibility === "public" ? " pn-publish-dot-live" : "")} />
+                <span className={route.visibility === "public" ? "pn-public-text" : "pn-publish-status-text"}>
+                  {route.visibility === "public" ? "Published" : "Private"}
+                </span>
+              </span>
             ) : (
-              onRemix && (
-                <button
-                  className="pn-btn pn-btn-ghost"
-                  onClick={() => onRemix(route)}
-                  title="Make your own editable copy — credit to the original stays attached"
-                >
-                  Remix
-                </button>
-              )
+              <span className="pn-publish-status pn-publish-status-text">Custom game · can't publish</span>
             )}
-            <button className="pn-btn pn-btn-ghost" onClick={onHistory}>History</button>
           </div>
+        )}
+      </div>
 
-          <button
-            className="pn-btn pn-btn-ghost pn-btn-full"
-            style={{ marginTop: 16 }}
-            disabled={!pb}
-            onClick={resetPB}
-          >
-            Reset PB
-          </button>
-
-          {isOwner && (
-            <>
-              <div className="pn-publish-box">
-                {route.games?.steam_appid ? (
-                  <>
-                    <div className="pn-publish-status">
-                      <span className={"pn-publish-dot" + (route.visibility === "public" ? " pn-publish-dot-live" : "")} />
-                      <span className={route.visibility === "public" ? "pn-public-text" : "pn-publish-status-text"}>
-                        {route.visibility === "public" ? "Published — live in Explore" : "Private — only you"}
-                      </span>
-                    </div>
-                    {route.visibility === "public" ? (
-                      <button className="pn-btn pn-btn-ghost pn-btn-full" style={{ marginTop: 8 }} disabled={publishBusy} onClick={unpublish}>
-                        Unpublish
-                      </button>
-                    ) : (
-                      <button className="pn-btn pn-btn-primary pn-btn-full" style={{ marginTop: 8 }} disabled={publishBusy} onClick={publish}>
-                        Publish to Explore
-                      </button>
-                    )}
-                  </>
-                ) : (
-                  <div className="pn-publish-status">
-                    <span className="pn-publish-dot" />
-                    <span className="pn-publish-status-text">Custom game — can't be published to Explore</span>
-                  </div>
+      <h2 className="pn-section-title">Segments</h2>
+      <div className="pn-roadbook pn-stagger">
+        {route.segments.map((s, i) => {
+          const pbDur = pb ? toDuration(pb.splits, i) : null;
+          const practiceBest = practiceBests[s.id];
+          const target = route.use_target !== false && s.target_ms != null ? s.target_ms : null;
+          return (
+            <div className="pn-roadbook-row" key={s.id}>
+              <span className="pn-roadbook-num">{String(i + 1).padStart(2, "0")}</span>
+              <div className="pn-roadbook-content">
+                <div className="pn-roadbook-title">{s.title}</div>
+                {s.notes && (
+                  <ul className="pn-note-steps">
+                    {s.notes.split("\n").filter(Boolean).map((line, j) => <li key={j}>{line}</li>)}
+                  </ul>
                 )}
               </div>
+              <div className="pn-roadbook-times">
+                {pbDur != null && <span className="pn-bracket pn-brass-text" title="Your PB run's time for this segment">{fmt(pbDur, false)}</span>}
+                {target != null && <span className="pn-bracket" title="Target">target {fmt(target, false)}</span>}
+                {practiceBest != null && <span className="pn-bracket" title="Your fastest logged practice rep">practice {fmt(practiceBest, false)}</span>}
+              </div>
+            </div>
+          );
+        })}
+      </div>
 
-              <button
-                className="pn-btn pn-btn-danger-ghost pn-btn-full"
-                style={{ marginTop: 10 }}
-                onClick={async () => { if (await confirm(`Delete route "${route.name}"? This can't be undone.`)) onDelete(route); }}
-              >
-                Delete route
-              </button>
-            </>
-          )}
-        </div>
-
-        <div>
-          <label className="pn-label" style={{ marginTop: 0 }}>Roadbook</label>
-          <div className="pn-roadbook pn-stagger">
-            {route.segments.map((s, i) => {
-              const pbDur = pb ? toDuration(pb.splits, i) : null;
-              const practiceBest = practiceBests[s.id];
-              return (
-                <div className="pn-roadbook-row" key={s.id}>
-                  <div className="pn-roadbook-scale">
-                    <span className="pn-roadbook-tick" />
-                    <span className="pn-roadbook-num">{String(i + 1).padStart(2, "0")}</span>
-                  </div>
-                  <div className="pn-roadbook-content">
-                    <div className="pn-roadbook-title-row">
-                      <div className="pn-roadbook-title">{s.title}</div>
-                      <div className="pn-roadbook-times">
-                        {pbDur != null && <span className="pn-bracket pn-brass-text">pb {fmt(pbDur, false)}</span>}
-                        {route.use_target !== false && s.target_ms != null && <span className="pn-bracket">target {fmt(s.target_ms, false)}</span>}
-                        {practiceBest != null && <span className="pn-bracket" title="Your fastest logged practice rep">practice {fmt(practiceBest, false)}</span>}
-                      </div>
-                    </div>
-                    {s.notes && (
-                      <ul className="pn-note-steps">
-                        {s.notes.split("\n").filter(Boolean).map((line, j) => <li key={j}>{line}</li>)}
-                      </ul>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+      <div className="pn-manage">
+        {isOwner && route.games?.steam_appid && (
+          route.visibility === "public" ? (
+            <button className="pn-btn pn-btn-outline" disabled={publishBusy} onClick={unpublish}>Unpublish from Explore</button>
+          ) : (
+            <button className="pn-btn pn-btn-primary" disabled={publishBusy} onClick={publish}>Publish to Explore</button>
+          )
+        )}
+        <button className="pn-btn-text" disabled={!pb} onClick={resetPB}>Reset PB</button>
+        {isOwner && (
+          <button
+            className="pn-btn-text pn-btn-text-danger"
+            onClick={async () => { if (await confirm(`Delete route "${route.name}"? This can't be undone.`)) onDelete(route); }}
+          >
+            Delete route
+          </button>
+        )}
       </div>
     </div>
   );

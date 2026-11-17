@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import * as db from "../lib/db";
 import { fmt, fmtDelta, toDurations } from "../lib/time";
-import BackHead from "../components/BackHead";
 import FlapClock from "../components/FlapClock";
 import PaceRoller from "../components/PaceRoller";
 import DeltaGraph from "../components/DeltaGraph";
@@ -20,6 +19,31 @@ export default function RunScreen({ routeId, userId, onExit, onFinished }) {
   const [result, setResult] = useState(null);
   const startRef = useRef(null);
   const rafRef = useRef(null);
+  const primaryRef = useRef(() => {});
+
+  // Space = the big button (start / split / resume). Ignored while typing,
+  // while a confirm dialog is open, and on key repeat, so holding the bar
+  // can't fire a string of splits.
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.code !== "Space" && e.key !== " ") return;
+      const t = e.target;
+      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
+      if (document.querySelector(".pn-confirm-overlay")) return;
+      if (!primaryRef.current.active) return;
+      e.preventDefault();
+      if (e.repeat) return;
+      primaryRef.current();
+    };
+    // A focused button would also "click" on Space keyup; swallow that so
+    // one press is always exactly one split.
+    const onKeyUp = (e) => {
+      if ((e.code === "Space" || e.key === " ") && e.target?.tagName === "BUTTON" && primaryRef.current.active) e.preventDefault();
+    };
+    window.addEventListener("keydown", onKey);
+    window.addEventListener("keyup", onKeyUp);
+    return () => { window.removeEventListener("keydown", onKey); window.removeEventListener("keyup", onKeyUp); };
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -121,72 +145,121 @@ export default function RunScreen({ routeId, userId, onExit, onFinished }) {
   const pbDurationForCurrent = pbDurations && pbDurations[segIdx] != null ? pbDurations[segIdx] : null;
   const livePbDelta = pbDurationForCurrent != null && elapsed > 0 ? elapsedInSeg - pbDurationForCurrent : null;
 
-  return (
-    <div className="pn-view">
-      <BackHead
-        onBack={async () => { if (running && !(await confirm("Run in progress — leave and lose it?"))) return; onExit(); }}
-        eyebrow="Run"
-        title={route.name}
-      />
+  const isLast = segIdx + 1 >= route.segments.length;
+  const nextSeg = !isLast ? route.segments[segIdx + 1] : null;
+  const notStarted = !running && elapsed === 0;
+  const paused = !running && elapsed > 0;
+  const totalDelta = pb && elapsed > 0 && splits.length > 0 && pbAtSplit(splits.length - 1) != null
+    ? splits[splits.length - 1] - pbAtSplit(splits.length - 1)
+    : null;
+  const clock = fmt(elapsed);
+  const dot = clock.lastIndexOf(".");
 
-      <div className="pn-clockbox">
-        <FlapClock text={fmt(elapsed)} />
-        {pb && (
-          <div className="pn-clock-vs pn-clock-vs-total">
-            total vs <span className="pn-brass-text">pb {fmt(pb.total_ms, false)}</span>
-            {elapsed > 0 && (
-              <span className={elapsed - pb.total_ms > 0 ? "pn-bad" : "pn-good"}> ({fmtDelta(elapsed - pb.total_ms)})</span>
-            )}
+  const primary = () => {
+    if (finished) return;
+    if (running) doSplit();
+    else toggleRun();
+  };
+  primary.active = !finished;
+  primaryRef.current = primary;
+
+  const leave = async () => { if (running && !(await confirm("Run in progress — leave and lose it?"))) return; onExit(); };
+
+  return (
+    <div className="pn-view pn-run">
+      <div className="pn-run-top">
+        <div style={{ display: "flex", alignItems: "center", gap: 14, minWidth: 0 }}>
+          <button className="pn-back" style={{ margin: 0 }} onClick={leave}>‹ Back</button>
+          <div className="pn-run-title">{route.name}</div>
+        </div>
+        {!finished && (
+          <div className="pn-run-controls">
+            {running && <button className="pn-btn pn-btn-ghost" onClick={toggleRun}>Pause</button>}
+            <button className="pn-btn pn-btn-ghost" onClick={reset} disabled={notStarted}>Reset</button>
           </div>
-        )}
-        {currentAim != null ? (
-          <div className="pn-clock-vs">
-            this split {fmt(elapsedInSeg, false)} / <span className={currentAim.isPb ? "pn-brass-text" : ""}>{currentAim.isPb ? "pb" : "target"} {fmt(currentAim.value, false)}</span>
-            {liveSegDelta != null && <span className={liveSegDelta > 0 ? "pn-bad" : "pn-good"}> ({fmtDelta(liveSegDelta)})</span>}
-            {currentAim.isPb && currentTargetRef != null && (
-              <span className="pn-clock-vs-ref"> · target {fmt(currentTargetRef, false)}</span>
-            )}
-          </div>
-        ) : (
-          <div className="pn-clock-vs pn-ink-dim">no pb{useTarget ? " or target" : ""} set for this segment yet</div>
         )}
       </div>
 
-      {!finished ? (
-        <div className="pn-run-grid">
-          <div>
-            <PaceRoller segments={route.segments} currentIdx={segIdx} aims={aims} actuals={actualDurations} />
-            {currentSeg.notes && (
-              <>
-                <label className="pn-label">Notes</label>
-                <ul className="pn-note-steps pn-note-steps-run">
-                  {currentSeg.notes.split("\n").filter(Boolean).map((line, j) => <li key={j}>{line}</li>)}
-                </ul>
-              </>
-            )}
-          </div>
-
-          <div>
-            <div className="pn-roller-status" style={{ visibility: "hidden" }} aria-hidden="true">&nbsp;</div>
-            {lastDelta != null && (
-              <div className={"pn-delta-readout " + (lastDelta > 0 ? "pn-bad" : "pn-good")}>
-                {lastDelta > 0 ? "behind pb pace → " : "ahead of pb pace → "}{fmtDelta(lastDelta)}
-              </div>
-            )}
-
-            <DeltaGraph pointsDelta={deltaSeries.length ? deltaSeries : null} livePoint={livePbDelta} />
-
-            <div className="pn-btn-row" style={{ marginTop: 14 }}>
-              <button className="pn-btn pn-btn-ghost" onClick={toggleRun}>{running ? "Pause" : elapsed === 0 ? "Start" : "Resume"}</button>
-              <button className="pn-btn pn-btn-primary" style={{ flex: 2 }} onClick={doSplit} disabled={!running}>
-                Split → {segIdx + 1 >= route.segments.length ? "Finish" : "next"}
-              </button>
-            </div>
-            <button className="pn-btn pn-btn-ghost pn-btn-full" style={{ marginTop: 8 }} onClick={reset}>Reset run</button>
-          </div>
+      {!finished && (
+        <div className="pn-track" aria-hidden="true">
+          {route.segments.map((s, i) => (
+            <div
+              key={s.id}
+              className={"pn-track-seg" + (i < segIdx ? " pn-track-seg-done" : i === segIdx && elapsed > 0 ? " pn-track-seg-live" : "")}
+              style={{ flex: 1 }}
+            />
+          ))}
         </div>
+      )}
+
+      {!finished ? (
+        <>
+          <div className="pn-clockbox">
+            <div className="pn-bigclock" aria-label={clock}>
+              {dot === -1 ? clock : <>{clock.slice(0, dot)}<span className="pn-bigclock-tenths">{clock.slice(dot)}</span></>}
+            </div>
+            <div className="pn-clock-lines">
+              {totalDelta != null && (
+                <span className={"pn-clock-delta " + (totalDelta > 0 ? "pn-bad" : "pn-good")}>
+                  {fmtDelta(totalDelta)} {totalDelta > 0 ? "behind" : "ahead"}
+                </span>
+              )}
+              {pb ? (
+                <span className="pn-clock-vs">PB <span className="pn-brass-text">{fmt(pb.total_ms, false)}</span></span>
+              ) : (
+                <span className="pn-clock-vs">First run on this route — no PB yet</span>
+              )}
+            </div>
+          </div>
+
+          <div className="pn-run-grid">
+            <section className="pn-current">
+              <div className="pn-current-meta">
+                Segment {segIdx + 1} of {route.segments.length}
+                {currentAim != null && (
+                  <> · {currentAim.isPb ? <span className="pn-brass-text">best {fmt(currentAim.value, false)}</span> : <>target {fmt(currentAim.value, false)}</>}</>
+                )}
+                {currentAim?.isPb && currentTargetRef != null && <> · target {fmt(currentTargetRef, false)}</>}
+                {liveSegDelta != null && running && (
+                  <> · <span className={liveSegDelta > 0 ? "pn-bad" : "pn-good"}>{fmtDelta(liveSegDelta)}</span></>
+                )}
+              </div>
+              <h1 className="pn-current-title">{currentSeg.title}</h1>
+              {currentSeg.notes ? (
+                <ol className="pn-note-steps-run">
+                  {currentSeg.notes.split("\n").filter(Boolean).map((line, j) => <li key={j}>{line}</li>)}
+                </ol>
+              ) : (
+                <div className="pn-hint">No notes for this segment.</div>
+              )}
+              {nextSeg && <div className="pn-next-up">Next · <b>{nextSeg.title}</b></div>}
+            </section>
+
+            <aside style={{ marginTop: 44 }}>
+              <PaceRoller segments={route.segments} currentIdx={segIdx} aims={aims} actuals={actualDurations} />
+              {lastDelta != null && (
+                <div className={"pn-delta-readout " + (lastDelta > 0 ? "pn-bad" : "pn-good")}>
+                  {fmtDelta(lastDelta)} {lastDelta > 0 ? "behind PB pace" : "ahead of PB pace"}
+                </div>
+              )}
+              <div style={{ marginTop: 16 }}>
+                <DeltaGraph pointsDelta={deltaSeries.length ? deltaSeries : null} livePoint={livePbDelta} />
+              </div>
+            </aside>
+          </div>
+
+          <div className="pn-split-bar">
+            <button
+              className={"pn-split-btn" + (running ? "" : " pn-split-btn-start")}
+              onClick={() => primaryRef.current()}
+            >
+              {notStarted ? "Start" : paused ? "Resume" : isLast ? "Finish" : "Split"}
+              <span className="pn-kbd">Space</span>
+            </button>
+          </div>
+        </>
       ) : (
-        <div style={{ maxWidth: 640, margin: "0 auto" }}>
+        <div style={{ maxWidth: 680, margin: "0 auto", width: "100%" }}>
           <RunSummary route={route} result={result} onReset={reset} onExit={onExit} />
         </div>
       )}

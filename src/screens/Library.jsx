@@ -53,39 +53,40 @@ export default function Library({ games, routesByGame, totalRuns, userId, onOpen
 
   return (
     <div className="pn-view">
-      <div className="pn-masthead">
-        <div className="pn-masthead-mark">PACENOTES</div>
-        <div className="pn-masthead-tag">Route notes and a live split timer, for any game.</div>
-        <div className="pn-masthead-rule" />
-        <div className="pn-masthead-readout">
-          <span className="pn-mono-num">{String(games.length).padStart(2, "0")}</span> games logged · <span className="pn-mono-num">{String(totalRuns).padStart(3, "0")}</span> runs recorded
+      <div className="pn-page-head">
+        <div>
+          <h1 className="pn-page-title">Library</h1>
+          <div className="pn-page-sub">
+            {games.length} {games.length === 1 ? "game" : "games"} · {totalRuns} {totalRuns === 1 ? "run" : "runs"}
+          </div>
         </div>
+        {games.length > 0 && (
+          <div className="pn-page-actions">
+            <div className="pn-search-field">
+              <svg className="pn-search-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="var(--ink-dim)" strokeWidth="1.8" aria-hidden="true"><circle cx="7" cy="7" r="5" /><path d="M11 11l3.5 3.5" /></svg>
+              <input
+                className="pn-input"
+                placeholder="Search your library"
+                aria-label="Search your library"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+              />
+              {query && (
+                <button className="pn-search-clear" onClick={() => setQuery("")} aria-label="Clear search">✕</button>
+              )}
+            </div>
+            <button className="pn-btn pn-btn-primary" onClick={() => setAdding(true)}>Add a game</button>
+          </div>
+        )}
       </div>
-
-      <button className="pn-btn pn-btn-ghost pn-btn-full" style={{ marginBottom: 20 }} onClick={onExplore}>
-        Explore public guides →
-      </button>
-
-      {games.length > 0 && (
-        <div className="pn-search-field">
-          <input
-            className="pn-input"
-            placeholder="Search your library…"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
-          {query && (
-            <button className="pn-search-clear" onClick={() => setQuery("")} aria-label="Clear search">✕</button>
-          )}
-        </div>
-      )}
 
       {games.length === 0 && !adding && (
         <div className="pn-empty-hero">
           <div className="pn-empty-hero-title">No games yet</div>
-          Log the game you're running to start building a route, or find one someone's already published in Explore.
-          <div style={{ marginTop: 18 }}>
-            <button className="pn-btn pn-btn-primary" onClick={() => setAdding(true)}>+ Log a game</button>
+          Add the game you're running to start building a route, or find one someone's already published in Explore.
+          <div className="pn-btn-row" style={{ marginTop: 20, justifyContent: "center" }}>
+            <button className="pn-btn pn-btn-primary" style={{ flex: "0 0 auto" }} onClick={() => setAdding(true)}>Add a game</button>
+            <button className="pn-btn pn-btn-ghost" style={{ flex: "0 0 auto" }} onClick={onExplore}>Browse Explore</button>
           </div>
         </div>
       )}
@@ -95,14 +96,23 @@ export default function Library({ games, routesByGame, totalRuns, userId, onOpen
       )}
 
       <div className="pn-tile-grid pn-stagger">
-        {filteredGames.map((g, i) => {
+        {filteredGames.map((g) => {
           const st = gameStats[g.id] || {};
+          const routeCount = (routesByGame[g.id] || []).length;
+          const routesLabel = `${routeCount} ${routeCount === 1 ? "route" : "routes"}`;
           return (
-            <div className="pn-tile" key={g.id} onClick={() => onOpenGame(g.id)}>
+            <div
+              className="pn-tile"
+              key={g.id}
+              role="link"
+              tabIndex={0}
+              onClick={() => onOpenGame(g.id)}
+              onKeyDown={(e) => { if (e.key === "Enter") onOpenGame(g.id); }}
+            >
               <button
                 className="pn-tile-x"
                 onClick={async (e) => { e.stopPropagation(); if (await confirm(`Remove "${g.name}" from your library?`)) onDeleteGame(g.id); }}
-                aria-label="Remove game"
+                aria-label={`Remove ${g.name}`}
               >
                 ✕
               </button>
@@ -111,21 +121,18 @@ export default function Library({ games, routesByGame, totalRuns, userId, onOpen
               ) : (
                 <div className="pn-tile-image pn-explore-tile-image-empty" />
               )}
-              <div className="pn-tile-idx">{String(i + 1).padStart(2, "0")}</div>
-              <div className="pn-tile-title">{g.name}</div>
-              <div className="pn-tile-foot">
-                <div className="pn-instrument-row">
-                  <div className="pn-instrument">
-                    <span className="pn-instrument-label">routes</span>
-                    <span className="pn-mono">{st.routeCount ?? 0}</span>
-                  </div>
-                  <div className="pn-instrument-divider" />
-                  <div className="pn-instrument">
-                    <span className="pn-instrument-label">pb</span>
-                    <span className="pn-mono pn-brass-text">{st.bestPb != null ? fmt(st.bestPb, false) : "—"}</span>
+              <div className="pn-tile-body">
+                <div className="pn-tile-text">
+                  <div className="pn-tile-title">{g.name}</div>
+                  <div className="pn-tile-meta">
+                    {st.bestPb != null ? (
+                      <><span className="pn-brass-text">PB {fmt(st.bestPb, false)}</span> · {routesLabel}</>
+                    ) : (
+                      <>{routesLabel} · no runs yet</>
+                    )}
                   </div>
                 </div>
-                <Sparkline values={st.sparkVals} />
+                {st.sparkVals && st.sparkVals.length > 1 && <Sparkline values={st.sparkVals} />}
               </div>
             </div>
           );
@@ -133,8 +140,8 @@ export default function Library({ games, routesByGame, totalRuns, userId, onOpen
 
         {(games.length > 0 || adding) &&
           (adding ? (
-            <div className="pn-tile" style={{ cursor: "default" }} onClick={(e) => e.stopPropagation()}>
-              <div className="pn-label" style={{ marginTop: 0 }}>New game</div>
+            <div className="pn-tile pn-tile-form" onClick={(e) => e.stopPropagation()}>
+              <div className="pn-label" style={{ marginTop: 0 }}>Add a game</div>
               {customMode ? (
                 <>
                   <input
@@ -181,7 +188,7 @@ export default function Library({ games, routesByGame, totalRuns, userId, onOpen
           ) : (
             <button className="pn-tile-add" onClick={() => setAdding(true)}>
               <span className="pn-tile-add-plus">+</span>
-              Log a game
+              Add a game
             </button>
           ))}
       </div>

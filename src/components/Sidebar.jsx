@@ -1,21 +1,25 @@
-import { useState } from "react";
-import { useConfirm } from "./ConfirmProvider";
-import GameSearchField from "./GameSearchField";
+import { useState, useEffect, useRef } from "react";
 
-// ---------- persistent nav sidebar ----------
-// Library and Explore are deliberately two real tabs, not one nav item
-// buried in a list next to the other — different content, different
-// purpose (yours vs. everyone's).
-export default function Sidebar({ games, activeGameId, activeSection, totalRuns, onHome, onLibraryTab, onExplore, onSelectGame, onAddGame, onDeleteGame, username, onUpdateUsername, onViewProfile, onSignIn, onSignOut }) {
-  const [adding, setAdding] = useState(false);
-  const [customMode, setCustomMode] = useState(false);
-  const [name, setName] = useState("");
-  const [steamPick, setSteamPick] = useState(null);
+// ---------- top bar ----------
+// Library and Explore are two real tabs (yours vs. everyone's). Games are
+// listed on the Library page itself, so the bar stays a bar: brand, tabs,
+// account. Kept the Sidebar name and props so App doesn't have to change.
+export default function Sidebar({ games, activeSection, totalRuns, onHome, onLibraryTab, onExplore, username, onUpdateUsername, onViewProfile, onSignIn, onSignOut }) {
+  const [menuOpen, setMenuOpen] = useState(false);
   const [editingName, setEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState("");
   const [nameError, setNameError] = useState("");
   const [nameBusy, setNameBusy] = useState(false);
-  const confirm = useConfirm();
+  const menuRef = useRef(null);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const close = (e) => { if (menuRef.current && !menuRef.current.contains(e.target)) { setMenuOpen(false); setEditingName(false); } };
+    const esc = (e) => { if (e.key === "Escape") { setMenuOpen(false); setEditingName(false); } };
+    document.addEventListener("mousedown", close);
+    document.addEventListener("keydown", esc);
+    return () => { document.removeEventListener("mousedown", close); document.removeEventListener("keydown", esc); };
+  }, [menuOpen]);
 
   const startEditName = () => { setNameDraft(username || ""); setNameError(""); setEditingName(true); };
   const saveName = async () => {
@@ -31,157 +35,67 @@ export default function Sidebar({ games, activeGameId, activeSection, totalRuns,
     }
   };
 
-  const resetAddForm = () => { setAdding(false); setCustomMode(false); setName(""); setSteamPick(null); };
-
-  const submit = () => {
-    if (customMode) {
-      if (name.trim()) { onAddGame(name.trim(), { custom: true }); resetAddForm(); }
-    } else if (steamPick) {
-      onAddGame(steamPick.name, steamPick);
-      resetAddForm();
-    }
-  };
-
   return (
-    <div className={"pn-sidebar" + (activeSection !== "library" ? " pn-sidebar-public" : "")}>
-      <button className="pn-sidebar-brand" onClick={onHome}>
-        <svg className="pn-sidebar-brand-icon" viewBox="0 0 90 70" fill="none" aria-hidden="true">
-          <rect x="8" y="8" width="32" height="54" rx="4" fill="var(--brass)"/>
-          <rect x="50" y="8" width="32" height="54" rx="4" fill="var(--brass)"/>
-          <circle cx="45" cy="27" r="3" fill="var(--brass)"/>
-          <circle cx="45" cy="43" r="3" fill="var(--brass)"/>
-          <line x1="13" y1="22" x2="35" y2="22" stroke="var(--bg)" strokeWidth="2.4" strokeLinecap="round"/>
-          <line x1="13" y1="31" x2="35" y2="31" stroke="var(--bg)" strokeWidth="2.4" strokeLinecap="round"/>
-          <line x1="13" y1="40" x2="35" y2="40" stroke="var(--bg)" strokeWidth="2.4" strokeLinecap="round"/>
-          <line x1="13" y1="49" x2="35" y2="49" stroke="var(--bg)" strokeWidth="2.4" strokeLinecap="round"/>
-          <line x1="55" y1="22" x2="77" y2="22" stroke="var(--bg)" strokeWidth="2.4" strokeLinecap="round"/>
-          <line x1="55" y1="31" x2="77" y2="31" stroke="var(--bg)" strokeWidth="2.4" strokeLinecap="round"/>
-          <line x1="55" y1="40" x2="77" y2="40" stroke="var(--bg)" strokeWidth="2.4" strokeLinecap="round"/>
-          <line x1="55" y1="49" x2="77" y2="49" stroke="var(--bg)" strokeWidth="2.4" strokeLinecap="round"/>
-        </svg>
-        <span className="pn-sidebar-brand-mark">PACENOTES</span>
-      </button>
-      <div className="pn-sidebar-rule" />
-
-      <div className="pn-sidebar-tabs">
-        <button className={"pn-sidebar-tab" + (activeSection === "library" ? " pn-sidebar-tab-active" : "")} onClick={onLibraryTab}>Library</button>
-        <button className={"pn-sidebar-tab" + (activeSection === "explore" ? " pn-sidebar-tab-active pn-sidebar-tab-active-public" : "")} onClick={onExplore}>Explore</button>
+    <header className="pn-topbar">
+      <div className="pn-topbar-left">
+        <button className="pn-brand" onClick={onHome} aria-label="Pacenotes home">
+          <svg className="pn-brand-icon" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            <circle cx="10" cy="11" r="7.75" stroke="currentColor" strokeWidth="2.5" />
+            <path d="M10 6.5V11" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+            <path d="M8 1.5h4" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+          </svg>
+          <span className="pn-brand-mark">Pacenotes</span>
+        </button>
+        <nav className="pn-tabs" aria-label="Sections">
+          <button className={"pn-tab" + (activeSection === "library" ? " pn-tab-active" : "")} onClick={onLibraryTab} aria-current={activeSection === "library" ? "page" : undefined}>Library</button>
+          <button className={"pn-tab" + (activeSection === "explore" ? " pn-tab-active" : "")} onClick={onExplore} aria-current={activeSection === "explore" ? "page" : undefined}>Explore</button>
+        </nav>
       </div>
 
-      {activeSection !== "library" ? (
-        <div className="pn-hint" style={{ marginTop: 14 }}>
-          {activeSection === "home"
-            ? "Sign in to start your own library, or browse what's already published."
-            : "Browsing public guides. Anything you open here gets added to your library automatically."}
-        </div>
-      ) : (
-        <>
-          <div className="pn-sidebar-nav">
-            {games.map((g, i) => (
-              <button
-                key={g.id}
-                className={"pn-nav-item" + (g.id === activeGameId ? " pn-nav-item-active" : "")}
-                onClick={() => onSelectGame(g.id)}
-              >
-                <span className="pn-nav-item-idx">{String(i + 1).padStart(2, "0")}</span>
-                <span className="pn-nav-item-name">{g.name}</span>
-                <span
-                  className="pn-nav-item-x"
-                  onClick={async (e) => { e.stopPropagation(); if (await confirm(`Remove "${g.name}" from your library? Any routes you own for it are deleted too — routes you're just following stay untouched for their owner.`)) onDeleteGame(g.id); }}
-                  role="button"
-                  aria-label={`Remove ${g.name}`}
-                >
-                  ✕
-                </span>
-              </button>
-            ))}
-          </div>
-          {adding ? (
-            <div className="pn-inline-form" style={{ flexDirection: "column", gap: 6 }}>
-              {customMode ? (
-                <input
-                  className="pn-input"
-                  style={{ fontSize: 12.5 }}
-                  autoFocus
-                  placeholder="Game name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === "Enter") submit(); if (e.key === "Escape") resetAddForm(); }}
-                />
-              ) : (
-                <GameSearchField
-                  className="pn-input"
-                  inputStyle={{ fontSize: 12.5 }}
-                  autoFocus
-                  placeholder="Search Steam for a game"
-                  value={name}
-                  onChange={(v) => { setName(v); setSteamPick(null); }}
-                  onPick={(r) => { setName(r.name); setSteamPick(r); }}
-                  onKeyDown={(e) => { if (e.key === "Enter") submit(); if (e.key === "Escape") resetAddForm(); }}
-                />
-              )}
-              <div className="pn-hint" style={{ fontSize: 10.5 }}>
-                {customMode ? (
-                  <>Custom — can't be published. <button className="pn-author-link" onClick={() => { setCustomMode(false); setName(""); }}>Search Steam instead</button></>
-                ) : steamPick ? (
-                  `Matched "${steamPick.name}".`
+      <div className="pn-topbar-right">
+        {username ? (
+          <div className="pn-account" ref={menuRef}>
+            <button className="pn-account-btn" onClick={() => setMenuOpen((o) => !o)} aria-expanded={menuOpen} aria-haspopup="menu">
+              <span className="pn-avatar" aria-hidden="true">{username.slice(0, 1)}</span>
+              {username}
+            </button>
+            {menuOpen && (
+              <div className="pn-account-menu" role="menu">
+                {editingName ? (
+                  <div className="pn-sidebar-name-edit">
+                    <label className="pn-label" style={{ margin: 0 }} htmlFor="pn-rename">Username</label>
+                    <input
+                      id="pn-rename"
+                      className="pn-input"
+                      value={nameDraft}
+                      autoFocus
+                      onChange={(e) => setNameDraft(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Enter") saveName(); if (e.key === "Escape") setEditingName(false); }}
+                    />
+                    {nameError && <div className="pn-sidebar-name-error">{nameError}</div>}
+                    <div className="pn-btn-row">
+                      <button className="pn-btn pn-btn-ghost" onClick={() => setEditingName(false)}>Cancel</button>
+                      <button className="pn-btn pn-btn-primary" disabled={nameBusy} onClick={saveName}>Save</button>
+                    </div>
+                  </div>
                 ) : (
-                  <>Pick a match. <button className="pn-author-link" onClick={() => { setCustomMode(true); setName(""); setSteamPick(null); }}>Add custom game</button></>
+                  <>
+                    <div className="pn-account-menu-head">
+                      <div className="pn-account-menu-name">{username}</div>
+                      <div className="pn-account-menu-meta">{games.length} {games.length === 1 ? "game" : "games"} · {totalRuns} {totalRuns === 1 ? "run" : "runs"}</div>
+                    </div>
+                    {onViewProfile && <button className="pn-menu-item" role="menuitem" onClick={() => { setMenuOpen(false); onViewProfile(); }}>Public profile</button>}
+                    <button className="pn-menu-item" role="menuitem" onClick={startEditName}>Change username</button>
+                    <button className="pn-menu-item pn-menu-item-danger" role="menuitem" onClick={() => { setMenuOpen(false); onSignOut(); }}>Sign out</button>
+                  </>
                 )}
               </div>
-              <div className="pn-btn-row">
-                <button className="pn-btn pn-btn-ghost" style={{ padding: "6px 8px", fontSize: 11 }} onClick={resetAddForm}>Cancel</button>
-                <button className="pn-btn pn-btn-primary" style={{ padding: "6px 8px", fontSize: 11 }} disabled={customMode ? !name.trim() : !steamPick} onClick={submit}>Add</button>
-              </div>
-            </div>
-          ) : (
-            <button className="pn-nav-add" onClick={() => setAdding(true)}>+ Log a game</button>
-          )}
-        </>
-      )}
-
-      <div className="pn-sidebar-spacer" />
-
-      <div className="pn-sidebar-footer">
-        <div className="pn-sidebar-footer-readout">
-          {String(games.length).padStart(2, "0")} games logged<br />
-          {String(totalRuns).padStart(3, "0")} runs recorded
-        </div>
-        {username && (
-          <div className="pn-sidebar-account">
-            {editingName ? (
-              <div className="pn-sidebar-name-edit">
-                <input
-                  className="pn-input"
-                  value={nameDraft}
-                  autoFocus
-                  onChange={(e) => setNameDraft(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === "Enter") saveName(); if (e.key === "Escape") setEditingName(false); }}
-                />
-                {nameError && <div className="pn-sidebar-name-error">{nameError}</div>}
-                <div className="pn-btn-row">
-                  <button className="pn-btn pn-btn-ghost" style={{ padding: "4px 8px", fontSize: 10.5 }} onClick={() => setEditingName(false)}>Cancel</button>
-                  <button className="pn-btn pn-btn-primary" style={{ padding: "4px 8px", fontSize: 10.5 }} disabled={nameBusy} onClick={saveName}>Save</button>
-                </div>
-              </div>
-            ) : (
-              <div className="pn-sidebar-account-main">
-                <button className="pn-sidebar-account-name" onClick={startEditName} title="Click to rename">{username}</button>
-                {onViewProfile && <button className="pn-sidebar-view-profile" onClick={onViewProfile}>view public profile</button>}
-              </div>
             )}
-            {!editingName && <button className="pn-sidebar-signout" onClick={onSignOut}>sign out</button>}
           </div>
-        )}
-        {!username && onSignIn && (
-          <div className="pn-sidebar-account">
-            <div className="pn-sidebar-account-main">
-              <div className="pn-hint" style={{ marginBottom: 6 }}>Browsing as a guest</div>
-              <button className="pn-btn pn-btn-ghost pn-btn-full" style={{ padding: "6px 8px", fontSize: 11 }} onClick={onSignIn}>Sign in</button>
-            </div>
-          </div>
+        ) : (
+          onSignIn && <button className="pn-btn pn-btn-primary" style={{ minHeight: 40, padding: "8px 20px", fontSize: 15 }} onClick={onSignIn}>Sign in</button>
         )}
       </div>
-    </div>
+    </header>
   );
 }

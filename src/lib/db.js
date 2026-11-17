@@ -95,7 +95,7 @@ export async function removeGameFromMyLibrary(gameId, userId) {
 export async function getRoute(routeId) {
   const { data, error } = await supabase
     .from("routes")
-    .select("*, games(steam_appid), owner:profiles!owner_id(username), remix_owner:profiles!remixed_from_owner_id(username)")
+    .select("*, games(steam_appid, name), owner:profiles!owner_id(username), remix_owner:profiles!remixed_from_owner_id(username)")
     .eq("id", routeId)
     .single();
   if (error) throw error;

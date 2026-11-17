@@ -19,7 +19,7 @@ export default function Home({ onExplore, onSignIn }) {
   return (
     <div className="pn-view pn-public-wash">
       <div className="pn-masthead">
-        <div className="pn-masthead-mark">PACENOTES</div>
+        <div className="pn-masthead-mark">Pacenotes</div>
         <div className="pn-masthead-tag">Route notes and a live split timer, for any game.</div>
         <div className="pn-masthead-rule" />
         <div className="pn-masthead-readout">
@@ -37,8 +37,8 @@ export default function Home({ onExplore, onSignIn }) {
         follow it, or find one someone else already wrote and make it your own.
       </div>
 
-      <div className="pn-btn-row" style={{ marginTop: 20, marginBottom: 28 }}>
-        <button className="pn-btn pn-btn-primary" onClick={onExplore}>Explore public guides →</button>
+      <div className="pn-action-row" style={{ marginTop: 24, marginBottom: 40 }}>
+        <button className="pn-btn pn-btn-primary pn-btn-lg" onClick={onExplore}>Explore public guides</button>
         <button className="pn-btn pn-btn-ghost" onClick={onSignIn}>Sign in to start your own</button>
       </div>
 
