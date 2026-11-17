@@ -73,7 +73,7 @@ button { color: inherit; }
 
 .pn-brand { display: inline-flex; align-items: center; gap: 10px; background: none; border: none; padding: 6px 0; cursor: pointer; color: var(--ink); }
 .pn-brand-mark { font-family: var(--font-num); font-weight: 700; font-size: 18px; letter-spacing: -0.01em; }
-.pn-brand-icon { width: 20px; height: 20px; flex-shrink: 0; }
+.pn-brand-icon { width: 29px; height: 23px; flex-shrink: 0; }
 @media (max-width: 480px) { .pn-brand-mark { display: none; } }
 
 .pn-tabs { display: inline-flex; gap: 4px; background: var(--panel-raised); border-radius: 999px; padding: 4px; }

@@ -39,10 +39,17 @@ export default function Sidebar({ games, activeSection, totalRuns, onHome, onLib
     <header className="pn-topbar">
       <div className="pn-topbar-left">
         <button className="pn-brand" onClick={onHome} aria-label="Pacenotes home">
-          <svg className="pn-brand-icon" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-            <circle cx="10" cy="11" r="7.75" stroke="currentColor" strokeWidth="2.5" />
-            <path d="M10 6.5V11" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-            <path d="M8 1.5h4" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+          <svg className="pn-brand-icon" viewBox="0 0 90 70" fill="none" aria-hidden="true">
+            <rect x="8" y="8" width="32" height="54" rx="4" fill="#D8A94E" />
+            <rect x="50" y="8" width="32" height="54" rx="4" fill="#D8A94E" />
+            <circle cx="45" cy="27" r="3" fill="#D8A94E" />
+            <circle cx="45" cy="43" r="3" fill="#D8A94E" />
+            {[22, 31, 40, 49].map((y) => (
+              <g key={y}>
+                <line x1="13" y1={y} x2="35" y2={y} stroke="#FFFFFF" strokeWidth="2.4" strokeLinecap="round" />
+                <line x1="55" y1={y} x2="77" y2={y} stroke="#FFFFFF" strokeWidth="2.4" strokeLinecap="round" />
+              </g>
+            ))}
           </svg>
           <span className="pn-brand-mark">Pacenotes</span>
         </button>
