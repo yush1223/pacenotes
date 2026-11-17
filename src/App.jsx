@@ -18,6 +18,7 @@ import Home from "./screens/Home";
 // Screens that only make sense with an account — browsing (Explore,
 // previewing a route, viewing a profile) never requires one.
 const GUEST_BLOCKED = new Set(["library", "game", "editor", "route", "run", "practice", "history"]);
+const PENDING_RUN_KEY = "pn-pending-guest-run";
 
 // ---------- root ----------
 export default function App() {
@@ -85,7 +86,26 @@ export default function App() {
   // their (now real) library if they signed in from the sidebar directly.
   useEffect(() => {
     if (!userId) return;
-    if (pendingRoute) {
+    // A guest's finished run survives the Google sign-in redirect (which
+    // reloads the page and wipes React state) via sessionStorage.
+    let stashed = null;
+    try { stashed = JSON.parse(sessionStorage.getItem(PENDING_RUN_KEY) || "null"); } catch { /* ignore */ }
+    if (stashed?.route && stashed?.run) {
+      sessionStorage.removeItem(PENDING_RUN_KEY);
+      setPendingRoute(null);
+      (async () => {
+        try {
+          await db.addToLibrary(stashed.route.id, userId);
+          await db.finishRun(stashed.route.id, userId, stashed.run.total, stashed.run.splits);
+          await reloadLibrary();
+          setRouteId(stashed.route.id);
+          setScreen("route");
+          flash("Run saved to your library");
+        } catch {
+          flash("Couldn't save that run");
+        }
+      })();
+    } else if (pendingRoute) {
       const r = pendingRoute;
       setPendingRoute(null);
       openPublicRoute(r);
@@ -116,6 +136,24 @@ export default function App() {
     setRouteId(route.id);
     setScreen("route");
     flash(`Added "${route.name}" to your library`);
+  };
+
+  // Start run straight from a public preview. Signed in: the route joins your
+  // library and runs normally. Guest: a throwaway run of the preview copy.
+  const startRunFromPreview = async (route) => {
+    if (userId) {
+      await db.addToLibrary(route.id, userId);
+      await reloadLibrary();
+      setRouteId(route.id);
+      setScreen("run");
+    } else {
+      setScreen("guestRun");
+    }
+  };
+
+  const saveGuestRun = (route, run) => {
+    try { sessionStorage.setItem(PENDING_RUN_KEY, JSON.stringify({ route: { id: route.id, name: route.name }, run })); } catch { /* ignore */ }
+    requireAuth("preview", "Sign in to save your run");
   };
 
   const openProfile = (target, fromScreen) => {
@@ -225,8 +263,8 @@ export default function App() {
 
   const sidebarProps = {
     games,
-    activeGameId: effectiveScreen === "library" || effectiveScreen === "explore" || effectiveScreen === "profile" || effectiveScreen === "preview" || effectiveScreen === "home" ? null : gameId,
-    activeSection: effectiveScreen === "home" ? "home" : effectiveScreen === "explore" || effectiveScreen === "profile" || effectiveScreen === "preview" ? "explore" : "library",
+    activeGameId: effectiveScreen === "library" || effectiveScreen === "explore" || effectiveScreen === "profile" || effectiveScreen === "preview" || effectiveScreen === "guestRun" || effectiveScreen === "home" ? null : gameId,
+    activeSection: effectiveScreen === "home" ? "home" : effectiveScreen === "explore" || effectiveScreen === "profile" || effectiveScreen === "preview" || effectiveScreen === "guestRun" ? "explore" : "library",
     totalRuns,
     // The brand logo means "go to my base" — Library if signed in, the
     // Home landing page if not (a soft landing, not a wall). The Library
@@ -245,7 +283,7 @@ export default function App() {
     onSignOut: signOut,
   };
 
-  const wide = effectiveScreen === "run" || effectiveScreen === "practice" || effectiveScreen === "route" || effectiveScreen === "game" || effectiveScreen === "library" || effectiveScreen === "explore" || effectiveScreen === "profile" || effectiveScreen === "preview" || effectiveScreen === "home";
+  const wide = effectiveScreen === "run" || effectiveScreen === "practice" || effectiveScreen === "route" || effectiveScreen === "game" || effectiveScreen === "library" || effectiveScreen === "explore" || effectiveScreen === "profile" || effectiveScreen === "preview" || effectiveScreen === "home" || effectiveScreen === "guestRun";
 
   return (
     <Shell toast={toast} sidebarProps={sidebarProps} wide={wide}>
@@ -291,6 +329,14 @@ export default function App() {
           onAdd={openPublicRoute}
           onRequireAuth={(route) => { setPendingRoute(route); requireAuth("preview", `Sign in to add "${route.name}" to your library`); }}
           onOpenProfile={(target) => openProfile(target, "preview")}
+          onStartRun={startRunFromPreview}
+        />
+      )}
+      {effectiveScreen === "guestRun" && previewRoute && (
+        <RunScreen
+          guestRoute={previewRoute}
+          onExit={() => setScreen("preview")}
+          onSaveGuestRun={saveGuestRun}
         />
       )}
       {effectiveScreen === "game" && (

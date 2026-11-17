@@ -7,7 +7,7 @@ import BackHead from "../components/BackHead";
 // The stop between "saw it in Explore" and "it's in my library" — nothing
 // is added until you say so. Segments/notes render exactly like the real
 // roadbook, just without PB/target-per-segment (you haven't run it yet).
-export default function RoutePreview({ route, userId, onBack, onAdd, onRequireAuth, onOpenProfile }) {
+export default function RoutePreview({ route, userId, onBack, onAdd, onRequireAuth, onOpenProfile, onStartRun }) {
   const [busy, setBusy] = useState(false);
   const [alreadyMine, setAlreadyMine] = useState(false);
 
@@ -63,9 +63,17 @@ export default function RoutePreview({ route, userId, onBack, onAdd, onRequireAu
         )}
       </div>
 
-      <button className="pn-btn pn-btn-primary pn-btn-full" disabled={busy} onClick={handleAdd} style={{ marginBottom: 24 }}>
-        {!userId ? "Sign in to add to your library" : alreadyMine ? "Open in your library →" : "+ Add to your library"}
-      </button>
+      <div className="pn-action-row" style={{ marginTop: 0, marginBottom: 32 }}>
+        {onStartRun && (
+          <button className="pn-btn pn-btn-primary pn-btn-lg" disabled={busy || !(route.segments?.length)} onClick={() => onStartRun(route)}>
+            Start run
+          </button>
+        )}
+        <button className="pn-btn pn-btn-ghost" disabled={busy} onClick={handleAdd}>
+          {!userId ? "Sign in to add to your library" : alreadyMine ? "Open in your library" : "Add to your library"}
+        </button>
+      </div>
+      {!userId && <div className="pn-hint" style={{ marginTop: -20, marginBottom: 28 }}>No account needed to try the timer. Sign in afterwards to keep your time.</div>}
 
       <label className="pn-label" style={{ marginTop: 0 }}>Roadbook</label>
       <div className="pn-roadbook pn-stagger">

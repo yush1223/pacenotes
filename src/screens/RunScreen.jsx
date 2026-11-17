@@ -7,7 +7,11 @@ import DeltaGraph from "../components/DeltaGraph";
 import { useConfirm } from "../components/ConfirmProvider";
 
 // ---------- run screen ----------
-export default function RunScreen({ routeId, userId, onExit, onFinished }) {
+// guestRoute: a public route a signed-out visitor is trying out. Nothing is
+// loaded or saved for them; at the finish they're offered a sign-in that
+// saves the run they just did (see onSaveGuestRun).
+export default function RunScreen({ routeId, userId, guestRoute, onExit, onFinished, onSaveGuestRun }) {
+  const guest = !!guestRoute;
   const confirm = useConfirm();
   const [route, setRoute] = useState(null);
   const [pb, setPb] = useState(null);
@@ -46,11 +50,12 @@ export default function RunScreen({ routeId, userId, onExit, onFinished }) {
   }, []);
 
   useEffect(() => {
+    if (guestRoute) { setRoute(guestRoute); setPb(null); return; }
     (async () => {
       setRoute(await db.getRoute(routeId));
       setPb(await db.getPB(routeId, userId));
     })();
-  }, [routeId, userId]);
+  }, [routeId, userId, guestRoute]);
 
   const tick = useCallback(() => {
     if (!startRef.current) return;
@@ -92,6 +97,11 @@ export default function RunScreen({ routeId, userId, onExit, onFinished }) {
 
       const total = now;
       const prevPb = pb;
+      if (guest) {
+        setResult({ total, splits: newSplits, prevPb: null, isNewPB: false, guest: true });
+        setFinished(true);
+        return;
+      }
       const { isNewPB } = await db.finishRun(route.id, userId, total, newSplits);
       if (isNewPB) setPb({ total_ms: total, splits: newSplits });
       setResult({ total, splits: newSplits, prevPb, isNewPB });
@@ -207,7 +217,7 @@ export default function RunScreen({ routeId, userId, onExit, onFinished }) {
               {pb ? (
                 <span className="pn-clock-vs">PB <span className="pn-brass-text">{fmt(pb.total_ms, false)}</span></span>
               ) : (
-                <span className="pn-clock-vs">First run on this route — no PB yet</span>
+                <span className="pn-clock-vs">{guest ? "Trying it as a guest. Sign in at the end to save your time" : "First run on this route, no PB yet"}</span>
               )}
             </div>
           </div>
@@ -260,7 +270,7 @@ export default function RunScreen({ routeId, userId, onExit, onFinished }) {
         </>
       ) : (
         <div style={{ maxWidth: 680, margin: "0 auto", width: "100%" }}>
-          <RunSummary route={route} result={result} onReset={reset} onExit={onExit} />
+          <RunSummary route={route} result={result} onReset={reset} onExit={onExit} onSaveGuestRun={onSaveGuestRun} />
         </div>
       )}
     </div>
@@ -288,7 +298,7 @@ function PBBurst() {
   );
 }
 
-function RunSummary({ route, result, onReset, onExit }) {
+function RunSummary({ route, result, onReset, onExit, onSaveGuestRun }) {
   const { total, splits, prevPb, isNewPB } = result;
   const durations = toDurations(splits);
   // Compare against prevPb (your best going into this run) whenever one
@@ -303,7 +313,7 @@ function RunSummary({ route, result, onReset, onExit }) {
     <div>
       <div className={"pn-result-panel" + (isNewPB ? " pn-result-pb" : "")}>
         {isNewPB && <PBBurst />}
-        <div className="pn-result-label">{isNewPB ? "★ new personal best" : "run complete"}</div>
+        <div className="pn-result-label">{isNewPB ? "★ New personal best" : "Run complete"}</div>
         <FlapClock text={fmt(total, false)} size="md" />
       </div>
 
@@ -311,7 +321,7 @@ function RunSummary({ route, result, onReset, onExit }) {
 
       <table className="pn-split-table">
         <thead>
-          <tr><th>#</th><th>Segment</th><th>Split</th><th>Pbδ</th>{useTarget && <th>Targetδ</th>}</tr>
+          <tr><th>#</th><th>Segment</th><th>Split</th>{!result.guest && <th>vs PB</th>}{useTarget && <th>vs target</th>}</tr>
         </thead>
         <tbody>
           {route.segments.map((s, i) => {
@@ -325,7 +335,7 @@ function RunSummary({ route, result, onReset, onExit }) {
                 <td className="pn-ink-dim">{i + 1}</td>
                 <td>{s.title}</td>
                 <td className="pn-mono">{fmt(segTime, false)}</td>
-                <td className={"pn-mono " + (delta == null ? "" : delta > 0 ? "pn-bad" : "pn-good")}>{delta == null ? "—" : fmtDelta(delta)}</td>
+                {!result.guest && <td className={"pn-mono " + (delta == null ? "" : delta > 0 ? "pn-bad" : "pn-good")}>{delta == null ? "—" : fmtDelta(delta)}</td>}
                 {useTarget && (
                   <td className={"pn-mono " + (targetDelta == null ? "" : targetDelta > 0 ? "pn-bad" : "pn-good")}>{targetDelta == null ? "—" : fmtDelta(targetDelta)}</td>
                 )}
@@ -335,10 +345,22 @@ function RunSummary({ route, result, onReset, onExit }) {
         </tbody>
       </table>
 
-      <div className="pn-btn-row" style={{ marginTop: 16 }}>
-        <button className="pn-btn pn-btn-ghost" onClick={onReset}>Run again</button>
-        <button className="pn-btn pn-btn-primary" onClick={onExit}>Done</button>
-      </div>
+      {result.guest ? (
+        <>
+          <div className="pn-hint" style={{ marginTop: 20, textAlign: "center" }}>
+            This run isn't saved yet. Sign in and it becomes your first PB on this route.
+          </div>
+          <div className="pn-btn-row" style={{ marginTop: 12 }}>
+            <button className="pn-btn pn-btn-ghost" onClick={onReset}>Run again</button>
+            <button className="pn-btn pn-btn-primary" onClick={() => onSaveGuestRun?.(route, { total: result.total, splits: result.splits })}>Sign in to save this run</button>
+          </div>
+        </>
+      ) : (
+        <div className="pn-btn-row" style={{ marginTop: 16 }}>
+          <button className="pn-btn pn-btn-ghost" onClick={onReset}>Run again</button>
+          <button className="pn-btn pn-btn-primary" onClick={onExit}>Done</button>
+        </div>
+      )}
     </div>
   );
 }
