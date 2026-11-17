@@ -35,7 +35,7 @@ export default function Explore({ userId, onBack, onPreviewRoute, onOpenProfile 
     return (
       <div className="pn-view pn-public-wash">
         <BackHead onBack={() => setSelectedGame(null)} eyebrow="Explore" title={selectedGame.name} accent="public" />
-        <div className="pn-mode-strip"><span className="pn-mode-strip-dot" />Public space — anyone can browse this</div>
+        <div className="pn-mode-strip"><span className="pn-mode-strip-dot" />Public space: anyone can browse this</div>
         <GameBanner steamAppid={selectedGame.steam_appid} thumb={selectedGame.image} className="pn-explore-banner" />
         {routes == null ? (
           <div className="pn-empty">Loading…</div>
@@ -92,13 +92,15 @@ export default function Explore({ userId, onBack, onPreviewRoute, onOpenProfile 
   return (
     <div className="pn-view pn-public-wash">
       <BackHead onBack={onBack} eyebrow="Explore" title="Discover" accent="public" />
-      <div className="pn-mode-strip"><span className="pn-mode-strip-dot" />Public space — browsing guides anyone can follow</div>
+      <div className="pn-mode-strip"><span className="pn-mode-strip-dot" />Public space: browsing guides anyone can follow</div>
 
       {published != null && published.length > 0 && (
-        <div className="pn-search-field">
+        <div className="pn-search-field" style={{ marginBottom: 8 }}>
+          <svg className="pn-search-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="var(--ink-dim)" strokeWidth="1.8" aria-hidden="true"><circle cx="7" cy="7" r="5" /><path d="M11 11l3.5 3.5" /></svg>
           <input
             className="pn-input"
-            placeholder="Search published games…"
+            aria-label="Search published games"
+            placeholder="Search published games"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
